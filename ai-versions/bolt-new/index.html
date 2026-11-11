@@ -1,0 +1,567 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="theme-color" content="#0f172a" />
+    <title>Змейка</title>
+    <style>
+      :root {
+        --bg: #0f172a;
+        --panel: #1e293b;
+        --panel-hover: #334155;
+        --board: #0b1220;
+        --snake: #22c55e;
+        --snake-head: #4ade80;
+        --food: #f43f5e;
+        --text: #f1f5f9;
+        --muted: #94a3b8;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      html,
+      body {
+        height: 100%;
+        overflow: hidden;
+        overscroll-behavior: none;
+      }
+
+      body {
+        background: radial-gradient(circle at top, #1e293b 0%, var(--bg) 60%);
+        color: var(--text);
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+        padding: 16px;
+        touch-action: none;
+        -webkit-user-select: none;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      header {
+        width: clamp(300px, min(92vw, 55vh), 400px);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      h1 {
+        font-size: 24px;
+        font-weight: 700;
+        line-height: 1.2;
+      }
+
+      .score {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        line-height: 1.2;
+      }
+
+      .score-label {
+        font-size: 12px;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      .score-value {
+        font-size: 28px;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .board {
+        position: relative;
+        width: clamp(300px, min(92vw, 55vh), 400px);
+        aspect-ratio: 1 / 1;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(148, 163, 184, 0.15);
+      }
+
+      canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+
+      .overlay {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        padding: 24px;
+        background: rgba(11, 18, 32, 0.82);
+        backdrop-filter: blur(4px);
+        text-align: center;
+        transition: opacity 0.25s ease, visibility 0.25s ease;
+      }
+
+      .overlay.hidden {
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+      }
+
+      .overlay-title {
+        font-size: 28px;
+        font-weight: 700;
+      }
+
+      .overlay-text {
+        font-size: 16px;
+        color: var(--muted);
+      }
+
+      .overlay-text strong {
+        color: var(--text);
+      }
+
+      .btn {
+        min-width: 180px;
+        min-height: 56px;
+        padding: 0 28px;
+        border: none;
+        border-radius: 14px;
+        background: var(--snake);
+        color: #052e16;
+        font-size: 18px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: transform 0.12s ease, background-color 0.2s ease;
+      }
+
+      .btn:hover {
+        background: var(--snake-head);
+      }
+
+      .btn:active {
+        transform: scale(0.96);
+      }
+
+      .btn:focus-visible {
+        outline: 3px solid #fde68a;
+        outline-offset: 3px;
+      }
+
+      .pad {
+        display: grid;
+        grid-template-columns: repeat(3, 64px);
+        grid-template-rows: repeat(2, 64px);
+        gap: 8px;
+      }
+
+      .pad-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 64px;
+        height: 64px;
+        border: none;
+        border-radius: 16px;
+        background: var(--panel);
+        color: var(--text);
+        cursor: pointer;
+        box-shadow: 0 4px 0 #0f172a, 0 8px 18px rgba(0, 0, 0, 0.35);
+        transition: transform 0.08s ease, background-color 0.15s ease, box-shadow 0.08s ease;
+      }
+
+      .pad-btn:hover {
+        background: var(--panel-hover);
+      }
+
+      .pad-btn:active,
+      .pad-btn.pressed {
+        transform: translateY(3px);
+        box-shadow: 0 1px 0 #0f172a, 0 3px 8px rgba(0, 0, 0, 0.3);
+        background: var(--snake);
+        color: #052e16;
+      }
+
+      .pad-btn:focus-visible {
+        outline: 3px solid #fde68a;
+        outline-offset: 2px;
+      }
+
+      .pad-up {
+        grid-column: 2;
+        grid-row: 1;
+      }
+
+      .pad-left {
+        grid-column: 1;
+        grid-row: 2;
+      }
+
+      .pad-down {
+        grid-column: 2;
+        grid-row: 2;
+      }
+
+      .pad-right {
+        grid-column: 3;
+        grid-row: 2;
+      }
+
+      .pad-btn svg {
+        width: 28px;
+        height: 28px;
+      }
+
+      .hint {
+        font-size: 13px;
+        color: var(--muted);
+        text-align: center;
+      }
+
+      @media (hover: hover) and (pointer: fine) {
+        .pad {
+          display: none;
+        }
+      }
+
+      @media (hover: hover) and (pointer: fine) {
+        .hint-touch {
+          display: none;
+        }
+      }
+
+      @media (hover: none), (pointer: coarse) {
+        .hint-desktop {
+          display: none;
+        }
+      }
+    </style>
+    <meta property="og:image" content="https://bolt.new/static/og_default.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="https://bolt.new/static/og_default.png">
+  </head>
+  <body>
+    <header>
+      <h1>Змейка</h1>
+      <div class="score">
+        <span class="score-label">Счёт</span>
+        <span class="score-value" id="score">0</span>
+      </div>
+    </header>
+
+    <div class="board">
+      <canvas id="board" width="400" height="400"></canvas>
+
+      <div class="overlay" id="overlay">
+        <h2 class="overlay-title" id="overlay-title">Змейка</h2>
+        <p class="overlay-text" id="overlay-text">Съедайте еду и растите</p>
+        <button class="btn" id="start-btn" type="button">Начать</button>
+      </div>
+    </div>
+
+    <div class="pad" aria-label="Экранные стрелки">
+      <button class="pad-btn pad-up" data-dir="up" type="button" aria-label="Вверх">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6" /></svg>
+      </button>
+      <button class="pad-btn pad-left" data-dir="left" type="button" aria-label="Влево">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6" /></svg>
+      </button>
+      <button class="pad-btn pad-down" data-dir="down" type="button" aria-label="Вниз">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+      </button>
+      <button class="pad-btn pad-right" data-dir="right" type="button" aria-label="Вправо">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6" /></svg>
+      </button>
+    </div>
+
+    <p class="hint hint-desktop">Стрелки на клавиатуре управляют змейкой, Пробел - старт и рестарт</p>
+    <p class="hint hint-touch">Проведите пальцем по полю или нажимайте стрелки</p>
+
+    <script>
+      (() => {
+        // Размер поля: 20x20 клеток по 20 px во внутреннем разрешении canvas
+        const GRID = 20;
+        const CELL = 400 / GRID;
+        const START_LENGTH = 3;
+        const STEP_MS = 130;
+        const MAX_QUEUED_TURNS = 3;
+        const SWIPE_MIN_PX = 24;
+
+        const DIRS = {
+          up: { x: 0, y: -1 },
+          down: { x: 0, y: 1 },
+          left: { x: -1, y: 0 },
+          right: { x: 1, y: 0 },
+        };
+
+        const KEY_TO_DIR = {
+          ArrowUp: 'up',
+          ArrowDown: 'down',
+          ArrowLeft: 'left',
+          ArrowRight: 'right',
+          KeyW: 'up',
+          KeyS: 'down',
+          KeyA: 'left',
+          KeyD: 'right',
+        };
+
+        const canvas = document.getElementById('board');
+        const ctx = canvas.getContext('2d');
+        const scoreEl = document.getElementById('score');
+        const overlay = document.getElementById('overlay');
+        const overlayTitle = document.getElementById('overlay-title');
+        const overlayText = document.getElementById('overlay-text');
+        const startBtn = document.getElementById('start-btn');
+
+        let snake = [];
+        let dir = DIRS.right;
+        let turnQueue = [];
+        let food = null;
+        let score = 0;
+        let state = 'idle'; // idle | playing | over
+        let timer = null;
+
+        // Проверка, что клетка свободна (не занята змейкой)
+        const isOccupied = (cell) => snake.some((s) => s.x === cell.x && s.y === cell.y);
+
+        // Случайная свободная клетка для еды
+        function spawnFood() {
+          const free = [];
+          for (let y = 0; y < GRID; y++) {
+            for (let x = 0; x < GRID; x++) {
+              const cell = { x, y };
+              if (!isOccupied(cell)) free.push(cell);
+            }
+          }
+          if (free.length === 0) return null;
+          return free[Math.floor(Math.random() * free.length)];
+        }
+
+        function resetGame() {
+          const cx = Math.floor(GRID / 2);
+          const cy = Math.floor(GRID / 2);
+          snake = [];
+          for (let i = 0; i < START_LENGTH; i++) {
+            snake.push({ x: cx - i, y: cy });
+          }
+          dir = DIRS.right;
+          turnQueue = [];
+          score = 0;
+          scoreEl.textContent = '0';
+          food = spawnFood();
+        }
+
+        // Добавляет поворот в очередь; разворот на 180 градусов отбрасывается
+        function queueTurn(name) {
+          const next = DIRS[name];
+          const last = turnQueue.length ? turnQueue[turnQueue.length - 1] : dir;
+          if (next.x === last.x && next.y === last.y) return;
+          if (next.x === -last.x && next.y === -last.y) return;
+          if (turnQueue.length >= MAX_QUEUED_TURNS) return;
+          turnQueue.push(next);
+        }
+
+        // Один шаг игры: движение, проверка столкновений, рост или сдвиг
+        function step() {
+          if (turnQueue.length) dir = turnQueue.shift();
+
+          const head = snake[0];
+          const newHead = { x: head.x + dir.x, y: head.y + dir.y };
+
+          const hitWall =
+            newHead.x < 0 || newHead.y < 0 || newHead.x >= GRID || newHead.y >= GRID;
+          // Хвост уходит из клетки в этом же ходу, поэтому его не учитываем
+          const body = snake.slice(0, snake.length - 1);
+          const hitSelf = body.some((s) => s.x === newHead.x && s.y === newHead.y);
+
+          if (hitWall || hitSelf) {
+            endGame();
+            return;
+          }
+
+          snake.unshift(newHead);
+
+          if (food && newHead.x === food.x && newHead.y === food.y) {
+            score += 1;
+            scoreEl.textContent = String(score);
+            food = spawnFood();
+            if (!food) {
+              endGame();
+            }
+          } else {
+            snake.pop();
+          }
+        }
+
+        function drawRoundedCell(x, y, radius, color) {
+          const inset = 1;
+          ctx.fillStyle = color;
+          ctx.beginPath();
+          ctx.roundRect(x * CELL + inset, y * CELL + inset, CELL - inset * 2, CELL - inset * 2, radius);
+          ctx.fill();
+        }
+
+        function draw() {
+          ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--board').trim();
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+          ctx.strokeStyle = 'rgba(148, 163, 184, 0.06)';
+          ctx.lineWidth = 1;
+          for (let i = 1; i < GRID; i++) {
+            ctx.beginPath();
+            ctx.moveTo(i * CELL, 0);
+            ctx.lineTo(i * CELL, canvas.height);
+            ctx.moveTo(0, i * CELL);
+            ctx.lineTo(canvas.width, i * CELL);
+            ctx.stroke();
+          }
+
+          if (food) {
+            const cx = food.x * CELL + CELL / 2;
+            const cy = food.y * CELL + CELL / 2;
+            ctx.save();
+            ctx.shadowColor = 'rgba(244, 63, 94, 0.8)';
+            ctx.shadowBlur = 12;
+            ctx.fillStyle = '#f43f5e';
+            ctx.beginPath();
+            ctx.arc(cx, cy, CELL / 2 - 3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+          }
+
+          snake.forEach((segment, index) => {
+            const isHead = index === 0;
+            const color = isHead ? '#4ade80' : '#22c55e';
+            drawRoundedCell(segment.x, segment.y, isHead ? 7 : 5, color);
+          });
+        }
+
+        function showOverlay(title, text, buttonLabel) {
+          overlayTitle.textContent = title;
+          overlayText.innerHTML = text;
+          startBtn.textContent = buttonLabel;
+          overlay.classList.remove('hidden');
+          startBtn.focus({ preventScroll: true });
+        }
+
+        function hideOverlay() {
+          overlay.classList.add('hidden');
+        }
+
+        function tick() {
+          if (state !== 'playing') return;
+          step();
+          if (state === 'playing') {
+            draw();
+            timer = setTimeout(tick, STEP_MS);
+          }
+        }
+
+        function startGame() {
+          clearTimeout(timer);
+          resetGame();
+          state = 'playing';
+          hideOverlay();
+          draw();
+          timer = setTimeout(tick, STEP_MS);
+        }
+
+        function endGame() {
+          state = 'over';
+          clearTimeout(timer);
+          draw();
+          showOverlay(
+            'Игра окончена',
+            `Ваш счёт: <strong>${score}</strong>`,
+            'Играть снова'
+          );
+        }
+
+        // Управление с клавиатуры
+        document.addEventListener('keydown', (e) => {
+          const name = KEY_TO_DIR[e.code];
+          if (name) e.preventDefault();
+
+          if (e.code === 'Space' || e.code === 'Enter') {
+            if (state !== 'playing') {
+              e.preventDefault();
+              startGame();
+            }
+            return;
+          }
+
+          if (name && state === 'playing') queueTurn(name);
+        });
+
+        // Кнопка старта / рестарта
+        startBtn.addEventListener('click', startGame);
+
+        // Экранные стрелки
+        document.querySelectorAll('.pad-btn').forEach((btn) => {
+          btn.addEventListener('pointerdown', (e) => {
+            e.preventDefault();
+            if (state !== 'playing') {
+              if (state === 'idle') startGame();
+              return;
+            }
+            queueTurn(btn.dataset.dir);
+          });
+        });
+
+        // Свайпы по всей странице; жесты прокрутки и масштабирования отключены
+        let touchStart = null;
+
+        document.addEventListener(
+          'touchstart',
+          (e) => {
+            if (e.touches.length !== 1) return;
+            touchStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+          },
+          { passive: true }
+        );
+
+        document.addEventListener(
+          'touchmove',
+          (e) => {
+            e.preventDefault();
+          },
+          { passive: false }
+        );
+
+        document.addEventListener('touchend', (e) => {
+          if (!touchStart || e.changedTouches.length === 0) return;
+          const dx = e.changedTouches[0].clientX - touchStart.x;
+          const dy = e.changedTouches[0].clientY - touchStart.y;
+          touchStart = null;
+
+          if (Math.max(Math.abs(dx), Math.abs(dy)) < SWIPE_MIN_PX) return;
+          if (state !== 'playing') return;
+
+          if (Math.abs(dx) > Math.abs(dy)) {
+            queueTurn(dx > 0 ? 'right' : 'left');
+          } else {
+            queueTurn(dy > 0 ? 'down' : 'up');
+          }
+        });
+
+        // Блокировка масштабирования жестами (iOS Safari)
+        ['gesturestart', 'gesturechange', 'gestureend'].forEach((type) => {
+          document.addEventListener(type, (e) => e.preventDefault());
+        });
+
+        resetGame();
+        draw();
+        showOverlay('Змейка', 'Съедайте еду и растите', 'Начать');
+      })();
+    </script>
+  </body>
+</html>

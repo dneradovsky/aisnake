@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <!-- Корректный viewport для мобильных: запрет масштабирования -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Змейка</title>
+  <style>
+    /* === Базовые сбросы === */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden; /* Запрет скролла страницы */
+      background: #0f0f15;
+      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      /* Запрет зума и скролла при свайпах */
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      overscroll-behavior: none;
+    }
+
+    /* === Контейнер игры === */
+    #game-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 10px;
+      gap: 15px;
+    }
+
+    /* === Счётчик === */
+    #score {
+      font-size: 22px;
+      font-weight: bold;
+      color: #2ed573;
+      letter-spacing: 1px;
+    }
+
+    /* === Обёртка поля (для позиционирования оверлея) === */
+    #game-wrapper {
+      position: relative;
+      /* Адаптивный размер: 400px на десктопе, до 100vw-20px на мобильном */
+      width: min(400px, calc(100vw - 20px));
+      aspect-ratio: 1 / 1;
+    }
+
+    /* === Игровое поле === */
+    #game {
+      display: block;
+      width: 100%;
+      height: 100%;
+      background: #1a1a24;
+      border: 2px solid #2ed573;
+      border-radius: 8px;
+      touch-action: none; /* Запрет жестов браузера на canvas */
+    }
+
+    /* === Оверлей "Игра окончена" === */
+    #overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    #overlay.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .overlay-content {
+      text-align: center;
+      padding: 20px;
+    }
+
+    .overlay-content h2 {
+      font-size: 26px;
+      margin-bottom: 12px;
+      color: #ff4757;
+    }
+
+    .overlay-content p {
+      font-size: 18px;
+      margin-bottom: 20px;
+      color: #ddd;
+    }
+
+    #restart-btn {
+      padding: 12px 24px;
+      font-size: 16px;
+      background: #2ed573;
+      color: #0f0f15;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+      touch-action: manipulation;
+    }
+
+    #restart-btn:active {
+      background: #26de81;
+    }
+
+    /* === Экранные кнопки управления (D-pad) === */
+    #controls {
+      display: grid;
+      grid-template-columns: repeat(3, 60px);
+      grid-template-rows: repeat(2, 60px);
+      gap: 8px;
+    }
+
+    .ctrl-btn {
+      width: 60px;
+      height: 60px;
+      font-size: 26px;
+      background: #2a2a35;
+      color: #fff;
+      border: 2px solid #3a3a45;
+      border-radius: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      touch-action: manipulation;
+    }
+
+    .ctrl-btn:active {
+      background: #3a3a45;
+      border-color: #2ed573;
+    }
+
+    /* Расположение кнопок в виде крестовины */
+    .ctrl-btn[data-dir="up"]    { grid-column: 2; grid-row: 1; }
+    .ctrl-btn[data-dir="left"]  { grid-column: 1; grid-row: 2; }
+    .ctrl-btn[data-dir="down"]  { grid-column: 2; grid-row: 2; }
+    .ctrl-btn[data-dir="right"] { grid-column: 3; grid-row: 2; }
+  </style>
+</head>
+<body>
+  <div id="game-container">
+    <div id="score">Счёт: 0</div>
+
+    <div id="game-wrapper">
+      <canvas id="game" width="400" height="400"></canvas>
+      <div id="overlay">
+        <div class="overlay-content">
+          <h2>Игра окончена</h2>
+          <p>Счёт: <span id="final-score">0</span></p>
+          <button id="restart-btn">Играть снова</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="controls">
+      <button class="ctrl-btn" data-dir="up">↑</button>
+      <button class="ctrl-btn" data-dir="left">←</button>
+      <button class="ctrl-btn" data-dir="down">↓</button>
+      <button class="ctrl-btn" data-dir="right">→</button>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      // =========================================================
+      // === КОНСТАНТЫ ИГРЫ ======================================
+      // =========================================================
+      const CELL_SIZE = 20;        // Размер одной клетки (px)
+      const GRID_SIZE = 20;        // Количество клеток по оси (20×20)
+      const CANVAS_SIZE = CELL_SIZE * GRID_SIZE; // 400px
+      const STEP_TIME = 150;       // Интервал между шагами змейки (мс)
+      const SWIPE_THRESHOLD = 30;  // Минимальная длина свайпа (px)
+
+      // =========================================================
+      // === ССЫЛКИ НА DOM-ЭЛЕМЕНТЫ ==============================
+      // =========================================================
+      const canvas       = document.getElementById('game');
+      const ctx          = canvas.getContext('2d');
+      const scoreEl      = document.getElementById('score');
+      const finalScoreEl = document.getElementById('final-score');
+      const overlay      = document.getElementById('overlay');
+      const restartBtn   = document.getElementById('restart-btn');
+      const controlBtns  = document.querySelectorAll('.ctrl-btn');
+
+      // =========================================================
+      // === СОСТОЯНИЕ ИГРЫ ======================================
+      // =========================================================
+      let snake = [];                         // Массив сегментов змейки
+      let direction     = { x: 1, y: 0 };     // Текущее направление движения
+      let nextDirection = { x: 1, y: 0 };     // Запланированное направление
+      let food          = { x: 0, y: 0 };     // Позиция еды
+      let score         = 0;
+      let gameOver      = false;
+      let lastStepTime  = 0;
+      let animationId   = null;
+
+      // =========================================================
+      // === ИНИЦИАЛИЗАЦИЯ НОВОЙ ИГРЫ ============================
+      // =========================================================
+      function init() {
+        // Змейка стартует из центра поля, длина 3 сегмента
+        snake = [
+          { x: 10, y: 10 }, // голова
+          { x: 9,  y: 10 },
+          { x: 8,  y: 10 }
+        ];
+        // Начальное направление — вправо
+        direction     = { x: 1, y: 0 };
+        nextDirection = { x: 1, y: 0 };
+        score    = 0;
+        gameOver = false;
+
+        spawnFood();
+        updateScore();
+        overlay.classList.remove('show');
+      }
+
+      // =========================================================
+      // === ГЕНЕРАЦИЯ ЕДЫ (не на теле змейки) ===================
+      // =========================================================
+      function spawnFood() {
+        let pos;
+        do {
+          pos = {
+            x: Math.floor(Math.random() * GRID_SIZE),
+            y: Math.floor(Math.random() * GRID_SIZE)
+          };
+        } while (snake.some(s => s.x === pos.x && s.y === pos.y));
+        food = pos;
+      }
+
+      // =========================================================
+      // === ОБНОВЛЕНИЕ СЧЁТЧИКА =================================
+      // =========================================================
+      function updateScore() {
+        scoreEl.textContent = 'Счёт: ' + score;
+      }
+
+      // =========================================================
+      // === УСТАНОВКА НАПРАВЛЕНИЯ (с запретом разворота на 180°) =
+      // =========================================================
+      function setDirection(dx, dy) {
+        // Запрет разворота на 180° относительно запланированного направления
+        if (nextDirection.x === -dx && nextDirection.y === -dy) return;
+        // Игнорируем повтор того же направления
+        if (nextDirection.x === dx && nextDirection.y === dy) return;
+        nextDirection = { x: dx, y: dy };
+      }
+
+      // =========================================================
+      // === ЛОГИКА ОБНОВЛЕНИЯ (один шаг игры) ===================
+      // =========================================================
+      function update() {
+        direction = nextDirection;
+
+        // Вычисляем новую позицию головы
+        const head = {
+          x: snake[0].x + direction.x,
+          y: snake[0].y + direction.y
+        };
+
+        // Проверка столкновения со стенкой
+        if (head.x < 0 || head.x >= GRID_SIZE ||
+            head.y < 0 || head.y >= GRID_SIZE) {
+          endGame();
+          return;
+        }
+
+        // Проверка столкновения с собственным телом
+        for (let i = 0; i < snake.length; i++) {
+          if (head.x === snake[i].x && head.y === snake[i].y) {
+            endGame();
+            return;
+          }
+        }
+
+        // Добавляем новую голову в начало массива
+        snake.unshift(head);
+
+        // Проверка: съели ли мы еду?
+        if (head.x === food.x && head.y === food.y) {
+          score++;
+          updateScore();
+          spawnFood();
+          // Хвост НЕ удаляем — змейка растёт
+        } else {
+          // Если не съели — удаляем хвост (длина сохраняется)
+          snake.pop();
+        }
+      }
+
+      // =========================================================
+      // === ЗАВЕРШЕНИЕ ИГРЫ =====================================
+      // =========================================================
+      function endGame() {
+        gameOver = true;
+        finalScoreEl.textContent = score;
+        overlay.classList.add('show');
+      }
+
+      // =========================================================
+      // === ОТРИСОВКА КАДРА =====================================
+      // =========================================================
+      function draw() {
+        // Фон поля
+        ctx.fillStyle = '#1a1a24';
+        ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+
+        // Едва заметная сетка для ориентира
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
+        ctx.lineWidth = 1;
+        for (let i = 1; i < GRID_SIZE; i++) {
+          ctx.beginPath();
+          ctx.moveTo(i * CELL_SIZE, 0);
+          ctx.lineTo(i * CELL_SIZE, CANVAS_SIZE);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(0, i * CELL_SIZE);
+          ctx.lineTo(CANVAS_SIZE, i * CELL_SIZE);
+          ctx.stroke();
+        }
+
+        // Еда (круг)
+        ctx.fillStyle = '#ff4757';
+        ctx.beginPath();
+        ctx.arc(
+          food.x * CELL_SIZE + CELL_SIZE / 2,
+          food.y * CELL_SIZE + CELL_SIZE / 2,
+          CELL_SIZE / 2 - 2,
+          0, Math.PI * 2
+        );
+        ctx.fill();
+
+        // Змейка (голова ярче)
+        for (let i = 0; i < snake.length; i++) {
+          const seg = snake[i];
+          ctx.fillStyle = i === 0 ? '#2ed573' : '#26de81';
+          ctx.fillRect(
+            seg.x * CELL_SIZE + 1,
+            seg.y * CELL_SIZE + 1,
+            CELL_SIZE - 2,
+            CELL_SIZE - 2
+          );
+        }
+      }
+
+      // =========================================================
+      // === ИГРОВОЙ ЦИКЛ ========================================
+      // =========================================================
+      function gameLoop(time) {
+        if (gameOver) return;
+
+        // Делаем шаг с фиксированным интервалом
+        if (time - lastStepTime >= STEP_TIME) {
+          update();
+          draw();
+          lastStepTime = time;
+        }
+
+        animationId = requestAnimationFrame(gameLoop);
+      }
+
+      // =========================================================
+      // === ПЕРЕЗАПУСК ИГРЫ =====================================
+      // =========================================================
+      function restart() {
+        if (animationId) cancelAnimationFrame(animationId);
+        init();
+        lastStepTime = performance.now();
+        animationId = requestAnimationFrame(gameLoop);
+      }
+
+      // =========================================================
+      // === УПРАВЛЕНИЕ: КЛАВИАТУРА ==============================
+      // =========================================================
+      document.addEventListener('keydown', function (e) {
+        // При game over — рестарт по Space или Enter
+        if (gameOver) {
+          if (e.code === 'Space' || e.code === 'Enter') {
+            e.preventDefault();
+            restart();
+          }
+          return;
+        }
+
+        switch (e.key) {
+          case 'ArrowUp':    e.preventDefault(); setDirection(0, -1); break;
+          case 'ArrowDown':  e.preventDefault(); setDirection(0,  1); break;
+          case 'ArrowLeft':  e.preventDefault(); setDirection(-1, 0); break;
+          case 'ArrowRight': e.preventDefault(); setDirection(1,  0); break;
+        }
+      });
+
+      // =========================================================
+      // === УПРАВЛЕНИЕ: СВАЙПЫ ПО CANVAS ========================
+      // =========================================================
+      let touchStartX = 0;
+      let touchStartY = 0;
+
+      canvas.addEventListener('touchstart', function (e) {
+        e.preventDefault();
+        const t = e.touches[0];
+        touchStartX = t.clientX;
+        touchStartY = t.clientY;
+      }, { passive: false });
+
+      canvas.addEventListener('touchmove', function (e) {
+        e.preventDefault(); // Предотвращаем скролл страницы
+      }, { passive: false });
+
+      canvas.addEventListener('touchend', function (e) {
+        e.preventDefault();
+
+        // При game over — тап по экрану перезапускает игру
+        if (gameOver) {
+          restart();
+          return;
+        }
+
+        const t = e.changedTouches[0];
+        const dx = t.clientX - touchStartX;
+        const dy = t.clientY - touchStartY;
+        const absDx = Math.abs(dx);
+        const absDy = Math.abs(dy);
+
+        // Игнорируем слишком короткие движения
+        if (Math.max(absDx, absDy) < SWIPE_THRESHOLD) return;
+
+        // Определяем направление свайпа
+        if (absDx > absDy) {
+          setDirection(dx > 0 ? 1 : -1, 0);
+        } else {
+          setDirection(0, dy > 0 ? 1 : -1);
+        }
+      }, { passive: false });
+
+      // =========================================================
+      // === УПРАВЛЕНИЕ: ЭКРАННЫЕ КНОПКИ =========================
+      // =========================================================
+      controlBtns.forEach(function (btn) {
+        const dir = btn.dataset.dir;
+
+        function handlePress(e) {
+          e.preventDefault();
+          if (gameOver) return;
+          switch (dir) {
+            case 'up':    setDirection(0, -1); break;
+            case 'down':  setDirection(0,  1); break;
+            case 'left':  setDirection(-1, 0); break;
+            case 'right': setDirection(1,  0); break;
+          }
+        }
+
+        // Дублируем обработчик для click и touchstart (чтобы не было задержки)
+        btn.addEventListener('click', handlePress);
+        btn.addEventListener('touchstart', handlePress, { passive: false });
+      });
+
+      // =========================================================
+      // === КНОПКА И ТАП ПО ОВЕРЛЕЮ ДЛЯ РЕСТАРТА ================
+      // =========================================================
+      restartBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        restart();
+      });
+
+      // Тап по фону оверлея (не по кнопке) тоже перезапускает игру
+      overlay.addEventListener('click', function (e) {
+        if (e.target === overlay || e.target.classList.contains('overlay-content')) {
+          restart();
+        }
+      });
+
+      // =========================================================
+      // === СТАРТ ИГРЫ ==========================================
+      // =========================================================
+      init();
+      lastStepTime = performance.now();
+      animationId = requestAnimationFrame(gameLoop);
+    })();
+  </script>
+</body>
+</html>

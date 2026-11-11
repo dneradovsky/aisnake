@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Гид по выбору ИИ 2026 — Змейка на Python</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1>Гид по выбору ИИ 2026</h1>
+        <p>Исследование эффективности нейросетей в разработке игры «Змейка» на Python без ручного кодинга</p>
+    </header>
+
+    <main>
+        <section class="intro">
+            <h2>О проекте</h2>
+            <p>
+                Мы сравнили пять ИИ-инструментов: ChatGPT, Claude, DeepSeek, Qwen и Bolt.new.
+                Каждая нейросеть самостоятельно создала браузерную игру «Змейка» на HTML/CSS/JavaScript по единому техническому заданию.
+            </p>
+            <p>
+                Ниже можно открыть код каждой версии, посмотреть сводную таблицу оценок и сравнить результаты.
+            </p>
+        </section>
+
+        <section class="run-instructions">
+            <h2>Как запустить игру</h2>
+            <ol>
+                <li>Открой нужную версию по ссылке ниже.</li>
+                <li>На компьютере управляй стрелками.</li>
+                <li>На телефоне используй свайпы или экранные кнопки.</li>
+            </ol>
+            <p>Ничего устанавливать не нужно — игра работает прямо в браузере.</p>
+        </section>
+
+        <section class="versions">
+            <h2>Версии игры</h2>
+            <div class="cards">
+                <a class="card chatgpt" href="../ai-versions/chatgpt/index.html" target="_blank">
+                    <h3>ChatGPT</h3>
+                    <p>OpenAI</p>
+                </a>
+                <a class="card claude" href="../ai-versions/claude/index.html" target="_blank">
+                    <h3>Claude</h3>
+                    <p>Anthropic</p>
+                </a>
+                <a class="card deepseek" href="../ai-versions/deepseek/index.html" target="_blank">
+                    <h3>DeepSeek</h3>
+                    <p>DeepSeek AI</p>
+                </a>
+                <a class="card qwen" href="../ai-versions/qwen/index.html" target="_blank">
+                    <h3>Qwen</h3>
+                    <p>AI IDE</p>
+                </a>
+                <a class="card bolt" href="../ai-versions/bolt-new/index.html" target="_blank">
+                    <h3>Bolt.new</h3>
+                    <p>AI-конструктор</p>
+                </a>
+            </div>
+        </section>
+
+        <section class="scores">
+            <h2>Сводная таблица оценок</h2>
+            <div class="table-wrapper">
+                <table id="scoreTable">
+                    <thead>
+                        <tr>
+                            <th>Критерий</th>
+                            <th>ChatGPT</th>
+                            <th>Claude</th>
+                            <th>DeepSeek</th>
+                            <th>Qwen</th>
+                            <th>Bolt.new</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Работоспособность</td>
+                            <td contenteditable="true">—</td>
+                            <td contenteditable="true">—</td>
+                            <td contenteditable="true">—</td>
+                            <td contenteditable="true">—</td>
+                            <td contenteditable="true">—</td>
+                        </tr>
+                        <tr>
+                            <td>Соответствие ТЗ</td>
+                            <td contenteditable="true">—</td>
+                            <td contenteditable="true">—</td>
+                            <td contenteditable="true">—</td>
+                            <td contenteditable="true">—</td>
+                            <td contenteditable="true">—</td>
+                        </tr>
+                        <tr>
+                            <td>Качество кода</td>
+                            <td contenteditable="true">—</td>
+                            <td contenteditable="true">—</td>
+                            <td contenteditable="true">—</td>
+                            <td contenteditable="true">—</td>
+                            <td contenteditable="true">—</td>
+                        </tr>
+                        <tr>
+                            <td>UX/UI</td>
+                            <td contenteditable="true">—</td>
+                            <td contenteditable="true">—</td>
+                            <td contenteditable="true">—</td>
+                            <td contenteditable="true">—</td>
+                            <td contenteditable="true">—</td>
+                        </tr>
+                        <tr>
+                            <td>Автономность</td>
+                            <td contenteditable="true">—</td>
+                            <td contenteditable="true">—</td>
+                            <td contenteditable="true">—</td>
+                            <td contenteditable="true">—</td>
+                            <td contenteditable="true">—</td>
+                        </tr>
+                        <tr>
+                            <td>Скорость</td>
+                            <td contenteditable="true">—</td>
+                            <td contenteditable="true">—</td>
+                            <td contenteditable="true">—</td>
+                            <td contenteditable="true">—</td>
+                            <td contenteditable="true">—</td>
+                        </tr>
+                        <tr class="total">
+                            <td><strong>Итог</strong></td>
+                            <td>—</td>
+                            <td>—</td>
+                            <td>—</td>
+                            <td>—</td>
+                            <td>—</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="recommendations">
+            <h2>Рекомендации</h2>
+            <ul id="recList">
+                <li>Результаты будут добавлены после завершения тестирования.</li>
+            </ul>
+        </section>
+    </main>
+
+    <footer>
+        <p>Проект 2026 · Команда ИИ-исследователей</p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
