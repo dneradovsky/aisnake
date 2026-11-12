@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // === Анкета ===
     // ЗАМЕНИТЕ ЭТУ ССЫЛКУ на URL вашего Google Apps Script после настройки
-    const GOOGLE_SCRIPT_URL = 'ВАШ_URL_GOOGLE_APPS_SCRIPT';
+    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwQSZdpmzxDF0mBcXXBjmuNhur6pIr8HR6TxPhAvFlcUWn7KDkF_u-ELbEkpvKHpf4Grg/exec';
 
     const surveyForm = document.getElementById('surveyForm');
     const submitBtn = document.getElementById('submitBtn');
