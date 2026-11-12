@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Гид по выбору ИИ 2026 — Змейка на Python</title>
+    <title>Гид по выбору ИИ 2026 — Змейка</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -51,7 +51,7 @@
                 </a>
                 <a class="card qwen" href="../ai-versions/qwen/index.html" target="_blank">
                     <h3>Qwen</h3>
-                    <p>AI IDE</p>
+                    <p>Alibaba</p>
                 </a>
                 <a class="card bolt" href="../ai-versions/bolt-new/index.html" target="_blank">
                     <h3>Bolt.new</h3>
@@ -141,6 +141,58 @@
             <ul id="recList">
                 <li>Результаты будут добавлены после завершения тестирования.</li>
             </ul>
+        </section>
+
+        <section class="survey">
+            <h2>Оцените версии игры</h2>
+            <p>Поиграйте в разные версии и поделитесь мнением. Ваши ответы помогут составить объективный рейтинг.</p>
+
+            <form id="surveyForm">
+                <div class="form-group">
+                    <label for="name">Ваше имя (необязательно)</label>
+                    <input type="text" id="name" name="name" placeholder="Аноним">
+                </div>
+
+                <div class="form-group">
+                    <label for="version">Какую версию вы пробовали? *</label>
+                    <select id="version" name="version" required>
+                        <option value="">Выберите версию</option>
+                        <option value="ChatGPT">ChatGPT</option>
+                        <option value="Claude">Claude</option>
+                        <option value="DeepSeek">DeepSeek</option>
+                        <option value="Qwen">Qwen</option>
+                        <option value="Bolt.new">Bolt.new</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="rating-work">Работоспособность (1–10) *</label>
+                    <input type="number" id="rating-work" name="ratingWork" min="1" max="10" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="rating-control">Удобство управления на телефоне (1–10) *</label>
+                    <input type="number" id="rating-control" name="ratingControl" min="1" max="10" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="rating-visual">Визуальный стиль (1–10) *</label>
+                    <input type="number" id="rating-visual" name="ratingVisual" min="1" max="10" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="liked">Что понравилось?</label>
+                    <textarea id="liked" name="liked" rows="3" placeholder="Например: плавное управление, красивые цвета..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="bugs">Заметили баги?</label>
+                    <textarea id="bugs" name="bugs" rows="3" placeholder="Опишите, что работало не так..."></textarea>
+                </div>
+
+                <button type="submit" id="submitBtn">Отправить отзыв</button>
+                <div id="formStatus" class="form-status"></div>
+            </form>
         </section>
     </main>
 
