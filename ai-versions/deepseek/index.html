@@ -1,713 +1,456 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Змейка</title>
-  <style>
-    /* ==== Сброс и базовые стили ==== */
-    * { box-sizing: border-box; }
-
-    html, body {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-      overflow: hidden;
-      font-family: 'Segoe UI', 'SF Pro Display', system-ui, -apple-system, sans-serif;
-      background: radial-gradient(ellipse at top, #1b1f3a 0%, #0a0b16 60%, #05060c 100%);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      touch-action: none;
-      user-select: none;
-      -webkit-user-select: none;
-      color: #e8eaf6;
-    }
-
-    /* Декоративное свечение на фоне */
-    body::before {
-      content: '';
-      position: fixed;
-      width: 600px;
-      height: 600px;
-      top: -200px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: radial-gradient(circle, rgba(76, 175, 80, 0.18), transparent 70%);
-      pointer-events: none;
-      filter: blur(40px);
-    }
-
-    /* ==== Контейнер ==== */
-    #game-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      width: 100%;
-      max-width: 420px;
-      padding: 12px;
-      position: relative;
-      z-index: 1;
-    }
-
-    /* ==== Заголовок ==== */
-    #header {
-      width: 100%;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 12px;
-      padding: 0 4px;
-    }
-
-    #title {
-      font-size: 20px;
-      font-weight: 700;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      background: linear-gradient(135deg, #6ee7a0, #4caf50, #2e7d32);
-      -webkit-background-clip: text;
-      background-clip: text;
-      -webkit-text-fill-color: transparent;
-      filter: drop-shadow(0 0 8px rgba(76, 175, 80, 0.5));
-    }
-
-    /* ==== Панель счёта ==== */
-    #score-panel {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 999px;
-      padding: 6px 16px;
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-    }
-
-    #score-label {
-      font-size: 12px;
-      font-weight: 600;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      color: #9aa0c0;
-    }
-
-    #score {
-      font-size: 22px;
-      font-weight: 800;
-      color: #6ee7a0;
-      text-shadow: 0 0 12px rgba(110, 231, 160, 0.6);
-      min-width: 24px;
-      text-align: right;
-      transition: transform 0.15s ease;
-    }
-
-    #score.pop {
-      transform: scale(1.35);
-    }
-
-    /* ==== Игровое поле ==== */
-    #game-area {
-      position: relative;
-      width: min(100vw - 24px, 400px);
-      height: min(100vw - 24px, 400px);
-      min-width: 300px;
-      min-height: 300px;
-      max-width: 400px;
-      max-height: 400px;
-      border-radius: 18px;
-      background: linear-gradient(145deg, #131830, #0b0e1f);
-      border: 1px solid rgba(110, 231, 160, 0.15);
-      box-shadow:
-        0 0 0 1px rgba(110, 231, 160, 0.05),
-        0 10px 40px rgba(0, 0, 0, 0.6),
-        inset 0 0 60px rgba(76, 175, 80, 0.05);
-      overflow: hidden;
-    }
-
-    /* Внутреннее свечение по краю поля */
-    #game-area::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      border-radius: 18px;
-      pointer-events: none;
-      box-shadow: inset 0 0 30px rgba(110, 231, 160, 0.08);
-    }
-
-    canvas {
-      display: block;
-      width: 100%;
-      height: 100%;
-    }
-
-    /* ==== Оверлей проигрыша ==== */
-    #overlay {
-      position: absolute;
-      inset: 0;
-      background: rgba(5, 6, 12, 0.85);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      display: none;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      border-radius: 18px;
-      z-index: 10;
-      opacity: 0;
-      transition: opacity 0.25s ease;
-      padding: 20px;
-      text-align: center;
-    }
-
-    #overlay.show {
-      display: flex;
-      opacity: 1;
-    }
-
-    #overlay-icon {
-      font-size: 48px;
-      margin-bottom: 8px;
-      filter: drop-shadow(0 0 20px rgba(255, 82, 82, 0.6));
-    }
-
-    #overlay h2 {
-      font-size: 26px;
-      margin: 0 0 6px;
-      font-weight: 800;
-      letter-spacing: 1px;
-      background: linear-gradient(135deg, #ff8a80, #ff5252);
-      -webkit-background-clip: text;
-      background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-
-    #final-score {
-      font-size: 15px;
-      color: #9aa0c0;
-      margin: 0 0 20px;
-    }
-
-    #final-score strong {
-      color: #6ee7a0;
-      font-size: 20px;
-    }
-
-    #restart-btn {
-      padding: 14px 36px;
-      font-size: 16px;
-      font-weight: 700;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      color: #06110a;
-      background: linear-gradient(135deg, #6ee7a0, #4caf50);
-      border: none;
-      border-radius: 999px;
-      cursor: pointer;
-      box-shadow:
-        0 6px 20px rgba(76, 175, 80, 0.45),
-        inset 0 -2px 0 rgba(0, 0, 0, 0.15);
-      transition: transform 0.15s ease, box-shadow 0.15s ease;
-      -webkit-tap-highlight-color: transparent;
-    }
-
-    #restart-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 10px 28px rgba(76, 175, 80, 0.55);
-    }
-
-    #restart-btn:active {
-      transform: translateY(1px);
-      box-shadow: 0 4px 14px rgba(76, 175, 80, 0.4);
-    }
-
-    /* ==== Экранные кнопки ==== */
-    #controls {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      grid-template-rows: repeat(3, 1fr);
-      gap: 8px;
-      margin-top: 16px;
-      width: 100%;
-      max-width: 280px;
-      aspect-ratio: 1 / 1;
-    }
-
-    .ctrl-btn {
-      background: linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02));
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 16px;
-      color: #c5cae9;
-      font-size: 22px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      cursor: pointer;
-      user-select: none;
-      -webkit-tap-highlight-color: transparent;
-      min-width: 60px;
-      min-height: 60px;
-      transition: background 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease, color 0.15s ease;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
-    }
-
-    .ctrl-btn:hover {
-      background: linear-gradient(145deg, rgba(110, 231, 160, 0.2), rgba(76, 175, 80, 0.08));
-      color: #6ee7a0;
-      box-shadow: 0 4px 18px rgba(76, 175, 80, 0.3);
-    }
-
-    .ctrl-btn:active {
-      transform: scale(0.94);
-      background: linear-gradient(145deg, rgba(110, 231, 160, 0.35), rgba(76, 175, 80, 0.15));
-      color: #6ee7a0;
-    }
-
-    /* Позиционирование в сетке 3×3 */
-    #btn-up    { grid-column: 2; grid-row: 1; }
-    #btn-left  { grid-column: 1; grid-row: 2; }
-    #btn-right { grid-column: 3; grid-row: 2; }
-    #btn-down  { grid-column: 2; grid-row: 3; }
-
-    /* ==== Адаптация под маленькие экраны ==== */
-    @media (max-width: 420px) {
-      #game-container { padding: 8px; }
-      #title { font-size: 16px; }
-      #score-panel { padding: 5px 12px; gap: 8px; }
-      #score { font-size: 18px; }
-      .ctrl-btn {
-        min-width: 52px;
-        min-height: 52px;
-        font-size: 18px;
-        border-radius: 14px;
-      }
-      #controls { max-width: 240px; gap: 6px; }
-      #overlay h2 { font-size: 22px; }
-    }
-
-    /* Скрываем кнопки управления на устройствах с мышью (по желанию) */
-    @media (hover: hover) and (pointer: fine) {
-      /* На десктопе кнопки тоже видны — можно убрать, если мешают */
-      /* #controls { display: none; } */
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Змейка</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;height:100%;overflow:hidden;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:radial-gradient(ellipse at top,#1b1f3a 0%,#0a0b16 60%,#05060c 100%);display:flex;justify-content:center;align-items:center;touch-action:none;user-select:none;-webkit-user-select:none;color:#e8eaf6}
+body::before{content:'';position:fixed;width:600px;height:600px;top:-200px;left:50%;transform:translateX(-50%);background:radial-gradient(circle,rgba(76,175,80,.18),transparent 70%);pointer-events:none;filter:blur(40px)}
+#game-container{display:flex;flex-direction:column;align-items:center;padding:12px;position:relative;z-index:1}
+#header{width:400px;max-width:100%;display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding:0 4px;gap:8px}
+#title{font-size:20px;font-weight:700;letter-spacing:2px;text-transform:uppercase;background:linear-gradient(135deg,#6ee7a0,#4caf50,#2e7d32);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 0 8px rgba(76,175,80,.5));white-space:nowrap}
+#score-panel{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:999px;padding:6px 14px;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:0 4px 20px rgba(0,0,0,.3)}
+.score-item{display:flex;align-items:center;gap:6px}
+.score-label{font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#9aa0c0}
+.score-value{font-size:18px;font-weight:800;color:#6ee7a0;text-shadow:0 0 12px rgba(110,231,160,.6);min-width:20px;text-align:right;transition:transform .15s ease;display:inline-block}
+.score-value.pop{transform:scale(1.4)}
+#best .score-value{color:#ffd54f;text-shadow:0 0 12px rgba(255,213,79,.6)}
+.score-divider{width:1px;height:20px;background:rgba(255,255,255,.15)}
+#toolbar{width:400px;max-width:100%;display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding:0 4px;gap:8px}
+#difficulty-group{display:flex;gap:4px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:999px;padding:3px}
+.diff-btn{padding:6px 12px;font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:#9aa0c0;background:transparent;border:none;border-radius:999px;cursor:pointer;transition:all .2s ease;-webkit-tap-highlight-color:transparent;white-space:nowrap}
+.diff-btn:hover{color:#c5cae9}
+.diff-btn.active{background:linear-gradient(135deg,#6ee7a0,#4caf50);color:#06110a;box-shadow:0 2px 10px rgba(76,175,80,.4)}
+#sound-btn{display:flex;align-items:center;justify-content:center;gap:6px;padding:7px 14px;font-size:12px;font-weight:700;color:#c5cae9;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:999px;cursor:pointer;transition:all .15s ease;-webkit-tap-highlight-color:transparent}
+#sound-btn:hover{background:rgba(110,231,160,.15);color:#6ee7a0}
+#sound-btn.muted{opacity:.55}
+#game-area{position:relative;width:400px;height:400px;border-radius:18px;background:linear-gradient(145deg,#131830,#0b0e1f);border:1px solid rgba(110,231,160,.15);box-shadow:0 0 0 1px rgba(110,231,160,.05),0 10px 40px rgba(0,0,0,.6),inset 0 0 60px rgba(76,175,80,.05);overflow:hidden;transition:box-shadow .2s ease,border-color .2s ease}
+#game-area.eat-flash{box-shadow:0 0 0 2px rgba(110,231,160,.8),0 10px 50px rgba(76,175,80,.7),inset 0 0 60px rgba(110,231,160,.25)}
+#game-area.dead-flash{box-shadow:0 0 0 2px rgba(255,82,82,.9),0 10px 50px rgba(255,82,82,.7),inset 0 0 60px rgba(255,82,82,.3);border-color:rgba(255,82,82,.5)}
+@media (max-width:440px){
+#game-area{width:min(calc(100vw - 24px),400px);height:min(calc(100vw - 24px),400px);min-width:300px;min-height:300px}
+#header,#toolbar{width:100%}
+}
+#game-area::after{content:'';position:absolute;inset:0;border-radius:18px;pointer-events:none;box-shadow:inset 0 0 30px rgba(110,231,160,.08)}
+canvas{display:block;width:100%;height:100%}
+#overlay{position:absolute;inset:0;background:rgba(5,6,12,.85);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:none;flex-direction:column;justify-content:center;align-items:center;border-radius:18px;z-index:10;opacity:0;transition:opacity .25s ease;padding:20px;text-align:center}
+#overlay.show{display:flex;opacity:1}
+#overlay-icon{font-size:48px;margin-bottom:8px;filter:drop-shadow(0 0 20px rgba(255,82,82,.6));animation:deadPop .4s ease}
+@keyframes deadPop{0%{transform:scale(0) rotate(-20deg);opacity:0}70%{transform:scale(1.2) rotate(10deg);opacity:1}100%{transform:scale(1) rotate(0);opacity:1}}
+#overlay h2{font-size:26px;margin:0 0 6px;font-weight:800;letter-spacing:1px;background:linear-gradient(135deg,#ff8a80,#ff5252);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+#final-score{font-size:15px;color:#9aa0c0;margin:0 0 4px}
+#final-score strong{color:#6ee7a0;font-size:20px}
+#new-record{font-size:13px;color:#ffd54f;font-weight:700;margin:0 0 16px;display:none;letter-spacing:.5px;animation:recordPulse 1s ease infinite}
+#new-record.show{display:block}
+@keyframes recordPulse{0%,100%{opacity:1;text-shadow:0 0 8px rgba(255,213,79,.8)}50%{opacity:.7;text-shadow:0 0 16px rgba(255,213,79,1)}}
+#restart-btn{padding:14px 36px;font-size:16px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#06110a;background:linear-gradient(135deg,#6ee7a0,#4caf50);border:none;border-radius:999px;cursor:pointer;box-shadow:0 6px 20px rgba(76,175,80,.45),inset 0 -2px 0 rgba(0,0,0,.15);transition:transform .15s ease,box-shadow .15s ease;-webkit-tap-highlight-color:transparent}
+#restart-btn:hover{transform:translateY(-2px);box-shadow:0 10px 28px rgba(76,175,80,.55)}
+#restart-btn:active{transform:translateY(1px);box-shadow:0 4px 14px rgba(76,175,80,.4)}
+#controls{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);gap:8px;margin-top:16px;width:280px;max-width:100%;aspect-ratio:1/1}
+.ctrl-btn{background:linear-gradient(145deg,rgba(255,255,255,.08),rgba(255,255,255,.02));border:1px solid rgba(255,255,255,.1);border-radius:16px;color:#c5cae9;font-size:22px;display:flex;justify-content:center;align-items:center;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent;min-width:60px;min-height:60px;transition:background .15s ease,transform .1s ease,box-shadow .15s ease,color .15s ease;box-shadow:0 4px 12px rgba(0,0,0,.35);touch-action:manipulation}
+.ctrl-btn:hover{background:linear-gradient(145deg,rgba(110,231,160,.2),rgba(76,175,80,.08));color:#6ee7a0;box-shadow:0 4px 18px rgba(76,175,80,.3)}
+.ctrl-btn:active{transform:scale(.94);background:linear-gradient(145deg,rgba(110,231,160,.35),rgba(76,175,80,.15));color:#6ee7a0}
+#btn-up{grid-column:2;grid-row:1}
+#btn-left{grid-column:1;grid-row:2}
+#btn-right{grid-column:3;grid-row:2}
+#btn-down{grid-column:2;grid-row:3}
+@media (max-width:420px){
+#game-container{padding:8px}
+#title{font-size:16px}
+#score-panel{padding:5px 10px;gap:6px}
+.score-value{font-size:15px}
+.score-label{font-size:9px}
+.diff-btn{padding:5px 8px;font-size:10px}
+#sound-btn{padding:6px 10px;font-size:11px}
+.ctrl-btn{min-width:52px;min-height:52px;font-size:18px;border-radius:14px}
+#controls{width:240px;gap:6px}
+#overlay h2{font-size:22px}
+}
+</style>
 </head>
 <body>
 
 <div id="game-container">
-  <!-- Заголовок и счёт -->
-  <div id="header">
-    <div id="title">Змейка</div>
-    <div id="score-panel">
-      <span id="score-label">Счёт</span>
-      <span id="score">0</span>
-    </div>
-  </div>
+<div id="header">
+<div id="title">Змейка</div>
+<div id="score-panel">
+<div class="score-item"><span class="score-label">Счёт</span><span class="score-value" id="score">0</span></div>
+<div class="score-divider"></div>
+<div class="score-item" id="best"><span class="score-label">Рекорд</span><span class="score-value" id="best-score">0</span></div>
+</div>
+</div>
 
-  <!-- Игровое поле -->
-  <div id="game-area">
-    <canvas id="gameCanvas"></canvas>
-    <!-- Оверлей при проигрыше -->
-    <div id="overlay">
-      <div id="overlay-icon">💀</div>
-      <h2>Игра окончена</h2>
-      <p id="final-score">Ваш результат: <strong id="final-score-value">0</strong></p>
-      <button id="restart-btn">Играть снова</button>
-    </div>
-  </div>
+<div id="toolbar">
+<div id="difficulty-group">
+<button class="diff-btn" data-diff="easy">Легко</button>
+<button class="diff-btn active" data-diff="normal">Норма</button>
+<button class="diff-btn" data-diff="hard">Сложно</button>
+</div>
+<button id="sound-btn" title="Клавиша M"><span id="sound-icon">🔊</span><span id="sound-text">Звук</span></button>
+</div>
 
-  <!-- Экранные кнопки управления -->
-  <div id="controls">
-    <button class="ctrl-btn" id="btn-up">▲</button>
-    <button class="ctrl-btn" id="btn-left">◀</button>
-    <button class="ctrl-btn" id="btn-right">▶</button>
-    <button class="ctrl-btn" id="btn-down">▼</button>
-  </div>
+<div id="game-area">
+<canvas id="gameCanvas"></canvas>
+<div id="overlay">
+<div id="overlay-icon">💀</div>
+<h2>Игра окончена</h2>
+<p id="final-score">Ваш результат: <strong id="final-score-value">0</strong></p>
+<p id="new-record">🏆 Новый рекорд!</p>
+<button id="restart-btn">Играть снова</button>
+</div>
+</div>
+
+<div id="controls">
+<button class="ctrl-btn" id="btn-up">▲</button>
+<button class="ctrl-btn" id="btn-left">◀</button>
+<button class="ctrl-btn" id="btn-right">▶</button>
+<button class="ctrl-btn" id="btn-down">▼</button>
+</div>
 </div>
 
 <script>
-  (function() {
-    // ==== Константы ====
-    const GRID_SIZE = 20;
-    const INITIAL_SPEED = 150;
+(function(){
+'use strict';
 
-    // ==== DOM ====
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-    const scoreSpan = document.getElementById('score');
-    const overlay = document.getElementById('overlay');
-    const finalScoreValue = document.getElementById('final-score-value');
-    const restartBtn = document.getElementById('restart-btn');
+const GRID=20;
+const DIFF={easy:{speed:220},normal:{speed:150},hard:{speed:95}};
+const LS_BEST='snake_best_score',LS_DIFF='snake_difficulty',LS_SOUND='snake_sound_enabled';
 
-    // ==== Состояние ====
-    let snake = [];
-    let direction = { x: 0, y: 0 };
-    let nextDirection = { x: 0, y: 0 };
-    let food = { x: 0, y: 0 };
-    let score = 0;
-    let gameOver = false;
-    let gameLoop = null;
-    let animTime = 0;              // время анимации еды
-    let animFrame = null;          // ID requestAnimationFrame
-    let eatPulse = 0;              // пульс при поедании
+const canvas=document.getElementById('gameCanvas');
+const ctx=canvas.getContext('2d');
+const gameArea=document.getElementById('game-area');
+const scoreSpan=document.getElementById('score');
+const bestSpan=document.getElementById('best-score');
+const overlay=document.getElementById('overlay');
+const finalScoreVal=document.getElementById('final-score-value');
+const newRecordEl=document.getElementById('new-record');
+const restartBtn=document.getElementById('restart-btn');
+const soundBtn=document.getElementById('sound-btn');
+const soundIcon=document.getElementById('sound-icon');
+const soundText=document.getElementById('sound-text');
+const diffBtns=document.querySelectorAll('.diff-btn');
 
-    // ==== Размер canvas ====
-    function resizeCanvas() {
-      const rect = document.getElementById('game-area').getBoundingClientRect();
-      const dpr = window.devicePixelRatio || 1;
-      // Устанавливаем физический размер с учётом DPR для чёткости
-      canvas.width = Math.round(rect.width * dpr);
-      canvas.height = Math.round(rect.height * dpr);
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      canvas._cssWidth = rect.width;
-      canvas._cssHeight = rect.height;
-    }
+let snake=[],direction={x:0,y:0},nextDirection={x:0,y:0},drawDirection={x:1,y:0};
+let food={x:0,y:0};
+let score=0,bestScore=0,difficulty='normal',soundEnabled=true;
+let gameOver=false,gameLoop=null,animFrame=null,animTime=0;
+let eatPulse=0,particles=[],foodSpawnScale=1,prevBest=0;
 
-    window.addEventListener('resize', () => {
-      resizeCanvas();
-      draw();
-    });
+// LOCALSTORAGE
+function loadSettings(){
+try{
+const b=localStorage.getItem(LS_BEST);if(b!==null)bestScore=parseInt(b,10)||0;
+const d=localStorage.getItem(LS_DIFF);if(d&&DIFF[d])difficulty=d;
+const s=localStorage.getItem(LS_SOUND);if(s!==null)soundEnabled=(s==='true');
+}catch(e){}
+prevBest=bestScore;
+bestSpan.textContent=bestScore;
+updateDiffButtons();updateSoundButton();
+}
+function saveBest(){try{localStorage.setItem(LS_BEST,String(bestScore));}catch(e){}}
+function saveDiff(){try{localStorage.setItem(LS_DIFF,difficulty);}catch(e){}}
+function saveSound(){try{localStorage.setItem(LS_SOUND,String(soundEnabled));}catch(e){}}
+function updateDiffButtons(){diffBtns.forEach(b=>b.classList.toggle('active',b.dataset.diff===difficulty));}
+function updateSoundButton(){soundIcon.textContent=soundEnabled?'🔊':'🔇';soundText.textContent=soundEnabled?'Звук':'Выкл';soundBtn.classList.toggle('muted',!soundEnabled);}
 
-    // ==== Инициализация ====
-    function initGame() {
-      snake = [
-        { x: 10, y: 10 },
-        { x: 9, y: 10 },
-        { x: 8, y: 10 }
-      ];
-      direction = { x: 1, y: 0 };
-      nextDirection = { x: 1, y: 0 };
-      score = 0;
-      gameOver = false;
-      eatPulse = 0;
-      scoreSpan.textContent = '0';
-      scoreSpan.classList.remove('pop');
-      overlay.classList.remove('show');
+// ЗВУК
+let audioCtx=null;
+function getAudioCtx(){
+if(!audioCtx){try{audioCtx=new(window.AudioContext||window.webkitAudioContext)();}catch(e){return null;}}
+if(audioCtx.state==='suspended')audioCtx.resume().catch(()=>{});
+return audioCtx;
+}
+function playTone(freq,dur,type,vol,delay){
+if(!soundEnabled)return;
+const ac=getAudioCtx();if(!ac)return;
+const now=ac.currentTime+(delay||0);
+const osc=ac.createOscillator(),gain=ac.createGain();
+osc.type=type||'sine';
+osc.frequency.setValueAtTime(freq,now);
+gain.gain.setValueAtTime(0.0001,now);
+gain.gain.linearRampToValueAtTime(vol||0.1,now+0.01);
+gain.gain.exponentialRampToValueAtTime(0.0001,now+dur);
+osc.connect(gain);gain.connect(ac.destination);
+osc.start(now);osc.stop(now+dur+0.05);
+}
+function playEatSound(){playTone(660,0.08,'square',0.08);playTone(880,0.10,'square',0.08,0.06);}
+function playDeadSound(){playTone(440,0.15,'sawtooth',0.10);playTone(330,0.18,'sawtooth',0.10,0.12);playTone(220,0.35,'sawtooth',0.10,0.26);}
+function playRecordSound(){playTone(523,0.10,'triangle',0.12);playTone(659,0.10,'triangle',0.12,0.10);playTone(784,0.10,'triangle',0.12,0.20);playTone(1047,0.25,'triangle',0.14,0.30);}
 
-      placeFood();
+// CANVAS
+function resizeCanvas(){
+const rect=gameArea.getBoundingClientRect();
+const dpr=window.devicePixelRatio||1;
+canvas.width=Math.round(rect.width*dpr);
+canvas.height=Math.round(rect.height*dpr);
+ctx.setTransform(dpr,0,0,dpr,0,0);
+canvas._cssWidth=rect.width;
+canvas._cssHeight=rect.height;
+}
+window.addEventListener('resize',function(){resizeCanvas();draw();});
 
-      if (gameLoop) clearInterval(gameLoop);
-      gameLoop = setInterval(tick, INITIAL_SPEED);
+// ИНИЦИАЛИЗАЦИЯ
+function initGame(){
+if(gameLoop){clearInterval(gameLoop);gameLoop=null;}
+snake=[{x:10,y:10},{x:9,y:10},{x:8,y:10}];
+direction={x:1,y:0};nextDirection={x:1,y:0};drawDirection={x:1,y:0};
+score=0;gameOver=false;eatPulse=0;particles=[];foodSpawnScale=1;prevBest=bestScore;
+scoreSpan.textContent='0';scoreSpan.classList.remove('pop');
+overlay.classList.remove('show');
+newRecordEl.classList.remove('show');
+gameArea.classList.remove('eat-flash','dead-flash');
+placeFood();foodSpawnScale=1.4;
+gameLoop=setInterval(tick,DIFF[difficulty].speed);
+if(!animFrame)animFrame=requestAnimationFrame(animate);
+}
 
-      // Запускаем анимацию отрисовки
-      if (animFrame) cancelAnimationFrame(animFrame);
-      animate();
-    }
+function placeFood(){
+let attempts=0,nf;
+do{nf={x:Math.floor(Math.random()*GRID),y:Math.floor(Math.random()*GRID)};attempts++;}
+while(snake.some(function(s){return s.x===nf.x&&s.y===nf.y;})&&attempts<1000);
+food=nf;
+}
 
-    // ==== Еда в свободной клетке ====
-    function placeFood() {
-      const maxAttempts = 1000;
-      let attempts = 0;
-      let newFood;
-      do {
-        newFood = {
-          x: Math.floor(Math.random() * GRID_SIZE),
-          y: Math.floor(Math.random() * GRID_SIZE)
-        };
-        attempts++;
-      } while (snake.some(seg => seg.x === newFood.x && seg.y === newFood.y) && attempts < maxAttempts);
-      food = newFood;
-    }
+// ШАГ
+function tick(){
+if(gameOver)return;
+direction={x:nextDirection.x,y:nextDirection.y};
+drawDirection={x:direction.x,y:direction.y};
+const head={x:snake[0].x+direction.x,y:snake[0].y+direction.y};
+if(head.x<0||head.x>=GRID||head.y<0||head.y>=GRID){endGame();return;}
+const willEat=(head.x===food.x&&head.y===food.y);
+const bodyToCheck=willEat?snake:snake.slice(0,-1);
+if(bodyToCheck.some(function(s){return s.x===head.x&&s.y===head.y;})){endGame();return;}
+snake.unshift(head);
+if(willEat){
+score++;
+scoreSpan.textContent=score;
+scoreSpan.classList.remove('pop');
+void scoreSpan.offsetWidth;
+scoreSpan.classList.add('pop');
+eatPulse=1;
+spawnParticles(food.x+0.5,food.y+0.5);
+gameArea.classList.add('eat-flash');
+setTimeout(function(){gameArea.classList.remove('eat-flash');},200);
+playEatSound();
+if(score>bestScore){bestScore=score;bestSpan.textContent=bestScore;saveBest();}
+placeFood();foodSpawnScale=1.4;
+}else{
+snake.pop();
+}
+}
 
-    // ==== Шаг игры ====
-    function tick() {
-      if (gameOver) return;
+// ЧАСТИЦЫ
+function spawnParticles(gx,gy){
+for(let i=0;i<10;i++){
+const a=(Math.PI*2*i)/10+Math.random()*0.5;
+const sp=0.04+Math.random()*0.06;
+particles.push({x:gx,y:gy,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:1,color:i%2===0?'#ff5252':'#ff8a80',size:0.08+Math.random()*0.08});
+}
+}
+function updateParticles(dt){
+for(let i=particles.length-1;i>=0;i--){
+const p=particles[i];
+p.x+=p.vx*dt*0.06;p.y+=p.vy*dt*0.06;
+p.vx*=0.95;p.vy*=0.95;
+p.life-=dt*0.0022;
+if(p.life<=0)particles.splice(i,1);
+}
+}
 
-      direction = { ...nextDirection };
-      const head = { x: snake[0].x + direction.x, y: snake[0].y + direction.y };
+// КОНЕЦ
+function endGame(){
+if(gameOver)return;
+gameOver=true;
+if(gameLoop){clearInterval(gameLoop);gameLoop=null;}
+gameArea.classList.add('dead-flash');
+finalScoreVal.textContent=score;
+if(score>prevBest&&score>0){newRecordEl.classList.add('show');playRecordSound();}
+playDeadSound();
+setTimeout(function(){overlay.classList.add('show');},300);
+}
 
-      // Стена
-      if (head.x < 0 || head.x >= GRID_SIZE || head.y < 0 || head.y >= GRID_SIZE) {
-        endGame();
-        return;
-      }
+// ОТРИСОВКА
+function draw(){
+const w=canvas._cssWidth||canvas.width;
+const h=canvas._cssHeight||canvas.height;
+const cellW=w/GRID,cellH=h/GRID;
+ctx.clearRect(0,0,w,h);
+const bg=ctx.createLinearGradient(0,0,w,h);
+bg.addColorStop(0,'#131830');bg.addColorStop(1,'#0b0e1f');
+ctx.fillStyle=bg;ctx.fillRect(0,0,w,h);
+ctx.strokeStyle='rgba(110,231,160,0.05)';ctx.lineWidth=1;
+for(let i=0;i<=GRID;i++){
+ctx.beginPath();ctx.moveTo(i*cellW,0);ctx.lineTo(i*cellW,h);ctx.stroke();
+ctx.beginPath();ctx.moveTo(0,i*cellH);ctx.lineTo(w,i*cellH);ctx.stroke();
+}
+// ЕДА
+const foodX=(food.x+0.5)*cellW,foodY=(food.y+0.5)*cellH;
+const baseR=Math.min(cellW,cellH)*0.32;
+const pulse=1+Math.sin(animTime*0.005)*0.12;
+const foodR=baseR*pulse*Math.max(0.3,foodSpawnScale);
+const glow=ctx.createRadialGradient(foodX,foodY,0,foodX,foodY,foodR*3);
+glow.addColorStop(0,'rgba(255,82,82,0.5)');glow.addColorStop(1,'rgba(255,82,82,0)');
+ctx.fillStyle=glow;ctx.beginPath();ctx.arc(foodX,foodY,foodR*3,0,Math.PI*2);ctx.fill();
+const fg=ctx.createRadialGradient(foodX-foodR*0.3,foodY-foodR*0.3,foodR*0.1,foodX,foodY,foodR);
+fg.addColorStop(0,'#ff8a80');fg.addColorStop(1,'#d32f2f');
+ctx.fillStyle=fg;ctx.beginPath();ctx.arc(foodX,foodY,foodR,0,Math.PI*2);ctx.fill();
+ctx.fillStyle='rgba(255,255,255,0.7)';
+ctx.beginPath();ctx.arc(foodX-foodR*0.3,foodY-foodR*0.35,foodR*0.22,0,Math.PI*2);ctx.fill();
+// ЧАСТИЦЫ
+particles.forEach(function(p){
+const px=p.x*cellW,py=p.y*cellH,r=p.size*cellW*p.life;
+ctx.globalAlpha=Math.max(0,p.life);
+ctx.fillStyle=p.color;
+ctx.beginPath();ctx.arc(px,py,r,0,Math.PI*2);ctx.fill();
+});
+ctx.globalAlpha=1;
+// ЗМЕЙКА
+const pulseScale=eatPulse>0?1+eatPulse*0.08:1;
+snake.forEach(function(seg,index){
+const x=seg.x*cellW+1,y=seg.y*cellH+1;
+const wCell=cellW-2,hCell=cellH-2;
+const radius=Math.min(wCell,hCell)*0.28;
+let fill;
+if(index===0){
+const grad=ctx.createLinearGradient(x,y,x+wCell,y+hCell);
+grad.addColorStop(0,'#a5f3c4');grad.addColorStop(1,'#4caf50');
+fill=grad;
+}else{
+const t=index/Math.max(snake.length-1,1);
+const r=Math.round(70+40*(1-t));
+const g=Math.round(200-70*t);
+const b=Math.round(90+20*(1-t));
+fill='rgb('+r+','+g+','+b+')';
+}
+if(index===0){ctx.shadowColor='rgba(110,231,160,0.8)';ctx.shadowBlur=12*pulseScale;}
+else{ctx.shadowColor='rgba(76,175,80,0.35)';ctx.shadowBlur=6;}
+ctx.fillStyle=fill;
+roundRect(ctx,x,y,wCell,hCell,radius);
+ctx.fill();
+ctx.shadowBlur=0;ctx.shadowColor='transparent';
+if(index===0){
+const eyeR=Math.min(wCell,hCell)*0.11;
+let e1x,e1y,e2x,e2y;
+if(drawDirection.x===1){e1x=x+wCell*0.72;e1y=y+hCell*0.3;e2x=x+wCell*0.72;e2y=y+hCell*0.7;}
+else if(drawDirection.x===-1){e1x=x+wCell*0.28;e1y=y+hCell*0.3;e2x=x+wCell*0.28;e2y=y+hCell*0.7;}
+else if(drawDirection.y===-1){e1x=x+wCell*0.3;e1y=y+hCell*0.28;e2x=x+wCell*0.7;e2y=y+hCell*0.28;}
+else{e1x=x+wCell*0.3;e1y=y+hCell*0.72;e2x=x+wCell*0.7;e2y=y+hCell*0.72;}
+ctx.fillStyle='#fff';
+ctx.beginPath();ctx.arc(e1x,e1y,eyeR,0,Math.PI*2);ctx.fill();
+ctx.beginPath();ctx.arc(e2x,e2y,eyeR,0,Math.PI*2);ctx.fill();
+ctx.fillStyle='#0a0b16';
+ctx.beginPath();ctx.arc(e1x,e1y,eyeR*0.55,0,Math.PI*2);ctx.fill();
+ctx.beginPath();ctx.arc(e2x,e2y,eyeR*0.55,0,Math.PI*2);ctx.fill();
+}
+});
+}
 
-      const willEat = (head.x === food.x && head.y === food.y);
-      let bodyToCheck = willEat ? snake : snake.slice(0, -1);
+function roundRect(c,x,y,w,h,r){
+r=Math.min(r,w/2,h/2);
+c.beginPath();
+c.moveTo(x+r,y);
+c.lineTo(x+w-r,y);
+c.quadraticCurveTo(x+w,y,x+w,y+r);
+c.lineTo(x+w,y+h-r);
+c.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+c.lineTo(x+r,y+h);
+c.quadraticCurveTo(x,y+h,x,y+h-r);
+c.lineTo(x,y+r);
+c.quadraticCurveTo(x,y,x+r,y);
+c.closePath();
+}
 
-      // Хвост
-      if (bodyToCheck.some(seg => seg.x === head.x && seg.y === head.y)) {
-        endGame();
-        return;
-      }
+// АНИМАЦИЯ
+function animate(ts){
+animTime=ts||0;
+if(eatPulse>0)eatPulse=Math.max(0,eatPulse-0.05);
+if(foodSpawnScale>1)foodSpawnScale=Math.max(1,foodSpawnScale-0.04);
+updateParticles(16);
+draw();
+animFrame=requestAnimationFrame(animate);
+}
 
-      snake.unshift(head);
+// УПРАВЛЕНИЕ
+function setDirection(dx,dy){
+if(gameOver)return;
+if(direction.x===-dx&&direction.y===-dy)return;
+nextDirection={x:dx,y:dy};
+}
 
-      if (willEat) {
-        score++;
-        scoreSpan.textContent = score;
-        // Анимация пульса счёта
-        scoreSpan.classList.remove('pop');
-        void scoreSpan.offsetWidth;
-        scoreSpan.classList.add('pop');
-        eatPulse = 1;
-        placeFood();
-      } else {
-        snake.pop();
-      }
-    }
+document.addEventListener('keydown',function(e){
+if(e.key==='ArrowUp'||e.key==='ArrowDown'||e.key==='ArrowLeft'||e.key==='ArrowRight')e.preventDefault();
+if(e.key==='m'||e.key==='M'){toggleSound();return;}
+switch(e.key){
+case 'ArrowUp':setDirection(0,-1);break;
+case 'ArrowDown':setDirection(0,1);break;
+case 'ArrowLeft':setDirection(-1,0);break;
+case 'ArrowRight':setDirection(1,0);break;
+}
+});
 
-    // ==== Конец игры ====
-    function endGame() {
-      if (gameOver) return;
-      gameOver = true;
-      clearInterval(gameLoop);
-      finalScoreValue.textContent = score;
-      overlay.classList.add('show');
-    }
+function toggleSound(){
+soundEnabled=!soundEnabled;
+updateSoundButton();
+saveSound();
+if(soundEnabled)playTone(660,0.08,'sine',0.08);
+}
 
-    // ==== Отрисовка (с анимацией) ====
-    function draw() {
-      const w = canvas._cssWidth || canvas.width;
-      const h = canvas._cssHeight || canvas.height;
-      const cellW = w / GRID_SIZE;
-      const cellH = h / GRID_SIZE;
+soundBtn.addEventListener('click',toggleSound);
 
-      ctx.clearRect(0, 0, w, h);
+document.getElementById('btn-up').addEventListener('click',function(){setDirection(0,-1);});
+document.getElementById('btn-down').addEventListener('click',function(){setDirection(0,1);});
+document.getElementById('btn-left').addEventListener('click',function(){setDirection(-1,0);});
+document.getElementById('btn-right').addEventListener('click',function(){setDirection(1,0);});
 
-      // Фон поля — лёгкий градиент
-      const bgGrad = ctx.createLinearGradient(0, 0, w, h);
-      bgGrad.addColorStop(0, '#131830');
-      bgGrad.addColorStop(1, '#0b0e1f');
-      ctx.fillStyle = bgGrad;
-      ctx.fillRect(0, 0, w, h);
+// СВАЙПЫ
+let touchStartX=0,touchStartY=0;
+const minSwipe=20;
+document.addEventListener('touchstart',function(e){
+const t=e.touches[0];touchStartX=t.clientX;touchStartY=t.clientY;
+},{passive:true});
+document.addEventListener('touchmove',function(e){
+if(e.target.closest('#game-area')||e.target.closest('#controls'))e.preventDefault();
+},{passive:false});
+document.addEventListener('touchend',function(e){
+if(!touchStartX||!touchStartY)return;
+const t=e.changedTouches[0];
+const dx=t.clientX-touchStartX,dy=t.clientY-touchStartY;
+const adx=Math.abs(dx),ady=Math.abs(dy);
+if(Math.max(adx,ady)>minSwipe){
+if(adx>ady){setDirection(dx>0?1:-1,0);}
+else{setDirection(0,dy>0?1:-1);}
+}
+touchStartX=0;touchStartY=0;
+},{passive:true});
 
-      // Сетка
-      ctx.strokeStyle = 'rgba(110, 231, 160, 0.05)';
-      ctx.lineWidth = 1;
-      for (let i = 0; i <= GRID_SIZE; i++) {
-        ctx.beginPath();
-        ctx.moveTo(i * cellW, 0);
-        ctx.lineTo(i * cellW, h);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(0, i * cellH);
-        ctx.lineTo(w, i * cellH);
-        ctx.stroke();
-      }
+// РЕСТАРТ
+restartBtn.addEventListener('click',function(){initGame();});
 
-      // ==== Еда ====
-      const foodX = (food.x + 0.5) * cellW;
-      const foodY = (food.y + 0.5) * cellH;
-      const baseRadius = Math.min(cellW, cellH) * 0.32;
-      // Пульсация радиуса
-      const pulse = 1 + Math.sin(animTime * 0.005) * 0.12;
-      const foodRadius = baseRadius * pulse;
+// СМЕНА СЛОЖНОСТИ — корректный рестарт
+diffBtns.forEach(function(btn){
+btn.addEventListener('click',function(){
+const newDiff=btn.dataset.diff;
+if(!DIFF[newDiff])return;
+difficulty=newDiff;
+saveDiff();
+updateDiffButtons();
+initGame();
+});
+});
 
-      // Свечение еды
-      const glow = ctx.createRadialGradient(foodX, foodY, 0, foodX, foodY, foodRadius * 3);
-      glow.addColorStop(0, 'rgba(255, 82, 82, 0.5)');
-      glow.addColorStop(1, 'rgba(255, 82, 82, 0)');
-      ctx.fillStyle = glow;
-      ctx.beginPath();
-      ctx.arc(foodX, foodY, foodRadius * 3, 0, Math.PI * 2);
-      ctx.fill();
+// СТАРТ
+function start(){
+resizeCanvas();
+loadSettings();
+initGame();
+}
+if(document.readyState==='complete')start();
+else window.addEventListener('load',start);
 
-      // Сама еда
-      const foodGrad = ctx.createRadialGradient(
-        foodX - foodRadius * 0.3, foodY - foodRadius * 0.3, foodRadius * 0.1,
-        foodX, foodY, foodRadius
-      );
-      foodGrad.addColorStop(0, '#ff8a80');
-      foodGrad.addColorStop(1, '#d32f2f');
-      ctx.fillStyle = foodGrad;
-      ctx.beginPath();
-      ctx.arc(foodX, foodY, foodRadius, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Блик
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-      ctx.beginPath();
-      ctx.arc(foodX - foodRadius * 0.3, foodY - foodRadius * 0.35, foodRadius * 0.22, 0, Math.PI * 2);
-      ctx.fill();
-
-      // ==== Змейка ====
-      // Дополнительный пульс при поедании
-      const pulseScale = eatPulse > 0 ? 1 + eatPulse * 0.08 : 1;
-
-      snake.forEach((seg, index) => {
-        const x = seg.x * cellW + 1;
-        const y = seg.y * cellH + 1;
-        const wCell = cellW - 2;
-        const hCell = cellH - 2;
-        const radius = Math.min(wCell, hCell) * 0.28;
-
-        let fill;
-        if (index === 0) {
-          // Голова — яркий градиент
-          const grad = ctx.createLinearGradient(x, y, x + wCell, y + hCell);
-          grad.addColorStop(0, '#a5f3c4');
-          grad.addColorStop(1, '#4caf50');
-          fill = grad;
-        } else {
-          // Тело — плавный переход от яркого к тёмному
-          const t = index / Math.max(snake.length - 1, 1);
-          const r = Math.round(70 + 40 * (1 - t));
-          const g = Math.round(200 - 70 * t);
-          const b = Math.round(90 + 20 * (1 - t));
-          fill = `rgb(${r}, ${g}, ${b})`;
-        }
-
-        // Свечение вокруг головы
-        if (index === 0) {
-          ctx.shadowColor = 'rgba(110, 231, 160, 0.8)';
-          ctx.shadowBlur = 12;
-        } else {
-          ctx.shadowColor = 'rgba(76, 175, 80, 0.35)';
-          ctx.shadowBlur = 6;
-        }
-
-        ctx.fillStyle = fill;
-        roundRect(ctx, x, y, wCell, hCell, radius);
-        ctx.fill();
-
-        ctx.shadowBlur = 0;
-        ctx.shadowColor = 'transparent';
-
-        // Глаза на голове
-        if (index === 0) {
-          const eyeR = Math.min(wCell, hCell) * 0.11;
-          let eye1X, eye1Y, eye2X, eye2Y;
-
-          // Положение глаз зависит от направления
-          if (direction.x === 1) { // вправо
-            eye1X = x + wCell * 0.72; eye1Y = y + hCell * 0.3;
-            eye2X = x + wCell * 0.72; eye2Y = y + hCell * 0.7;
-          } else if (direction.x === -1) { // влево
-            eye1X = x + wCell * 0.28; eye1Y = y + hCell * 0.3;
-            eye2X = x + wCell * 0.28; eye2Y = y + hCell * 0.7;
-          } else if (direction.y === -1) { // вверх
-            eye1X = x + wCell * 0.3;  eye1Y = y + hCell * 0.28;
-            eye2X = x + wCell * 0.7;  eye2Y = y + hCell * 0.28;
-          } else { // вниз
-            eye1X = x + wCell * 0.3;  eye1Y = y + hCell * 0.72;
-            eye2X = x + wCell * 0.7;  eye2Y = y + hCell * 0.72;
-          }
-
-          // Белок
-          ctx.fillStyle = '#ffffff';
-          ctx.beginPath();
-          ctx.arc(eye1X, eye1Y, eyeR, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.beginPath();
-          ctx.arc(eye2X, eye2Y, eyeR, 0, Math.PI * 2);
-          ctx.fill();
-
-          // Зрачок
-          ctx.fillStyle = '#0a0b16';
-          ctx.beginPath();
-          ctx.arc(eye1X, eye1Y, eyeR * 0.55, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.beginPath();
-          ctx.arc(eye2X, eye2Y, eyeR * 0.55, 0, Math.PI * 2);
-          ctx.fill();
-        }
-      });
-    }
-
-    // Вспомогательная функция для скруглённых прямоугольников
-    function roundRect(ctx, x, y, w, h, r) {
-      r = Math.min(r, w / 2, h / 2);
-      ctx.beginPath();
-      ctx.moveTo(x + r, y);
-      ctx.lineTo(x + w - r, y);
-      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-      ctx.lineTo(x + w, y + h - r);
-      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-      ctx.lineTo(x + r, y + h);
-      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-      ctx.lineTo(x, y + r);
-      ctx.quadraticCurveTo(x, y, x + r, y);
-      ctx.closePath();
-    }
-
-    // ==== Анимационный цикл ====
-    function animate(timestamp) {
-      animTime = timestamp || 0;
-      if (eatPulse > 0) eatPulse = Math.max(0, eatPulse - 0.05);
-      draw();
-      animFrame = requestAnimationFrame(animate);
-    }
-
-    // ==== Управление ====
-    function setDirection(dx, dy) {
-      if (gameOver) return;
-      if (direction.x === -dx && direction.y === -dy) return;
-      nextDirection = { x: dx, y: dy };
-    }
-
-    // Клавиатура
-    document.addEventListener('keydown', (e) => {
-      if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) {
-        e.preventDefault();
-      }
-      switch (e.key) {
-        case 'ArrowUp':    setDirection(0, -1); break;
-        case 'ArrowDown':  setDirection(0, 1);  break;
-        case 'ArrowLeft':  setDirection(-1, 0); break;
-        case 'ArrowRight': setDirection(1, 0);  break;
-      }
-    });
-
-    // Экранные кнопки
-    document.getElementById('btn-up').addEventListener('click', () => setDirection(0, -1));
-    document.getElementById('btn-down').addEventListener('click', () => setDirection(0, 1));
-    document.getElementById('btn-left').addEventListener('click', () => setDirection(-1, 0));
-    document.getElementById('btn-right').addEventListener('click', () => setDirection(1, 0));
-
-    // Свайпы
-    let touchStartX = 0, touchStartY = 0;
-    const minSwipe = 20;
-
-    document.addEventListener('touchstart', (e) => {
-      const t = e.touches[0];
-      touchStartX = t.clientX;
-      touchStartY = t.clientY;
-    }, { passive: true });
-
-    document.addEventListener('touchmove', (e) => {
-      if (e.target.closest('#game-area') || e.target.closest('#controls')) {
-        e.preventDefault();
-      }
-    }, { passive: false });
-
-    document.addEventListener('touchend', (e) => {
-      if (!touchStartX || !touchStartY) return;
-      const t = e.changedTouches[0];
-      const dx = t.clientX - touchStartX;
-      const dy = t.clientY - touchStartY;
-      const absDx = Math.abs(dx);
-      const absDy = Math.abs(dy);
-
-      if (Math.max(absDx, absDy) > minSwipe) {
-        if (absDx > absDy) {
-          setDirection(dx > 0 ? 1 : -1, 0);
-        } else {
-          setDirection(0, dy > 0 ? 1 : -1);
-        }
-      }
-      touchStartX = 0;
-      touchStartY = 0;
-    }, { passive: true });
-
-    // Рестарт
-    restartBtn.addEventListener('click', () => initGame());
-
-    // ==== Старт ====
-    function start() {
-      resizeCanvas();
-      initGame();
-    }
-
-    if (document.readyState === 'complete') {
-      start();
-    } else {
-      window.addEventListener('load', start);
-    }
-  })();
+})();
 </script>
-
 </body>
 </html>
