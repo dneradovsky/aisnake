@@ -8,16 +8,10 @@
 <style>
   /* ===== Цветовые токены (светлая и тёмная темы) ===== */
   :root {
-    --page: #e4ebe6;
-    --board-a: #cfe0d2;
-    --board-b: #c6d9ca;
-    --snake: #1f5f4a;
-    --head: #14392d;
-    --food: #d6402f;
-    --text: #16261f;
-    --muted: #4d6358;
-    --panel: #f2f6f3;
-    --veil: rgba(228, 235, 230, .88);
+    --page: #e4ebe6; --board-a: #cfe0d2; --board-b: #c6d9ca;
+    --snake: #1f5f4a; --head: #14392d; --food: #d6402f;
+    --text: #16261f; --muted: #4d6358; --panel: #f2f6f3;
+    --veil: rgba(228, 235, 230, .9);
     color-scheme: light;
   }
   @media (prefers-color-scheme: dark) {
@@ -25,7 +19,7 @@
       --page: #101a17; --board-a: #17261f; --board-b: #1a2b24;
       --snake: #6fcf97; --head: #b6f2cf; --food: #ff7a59;
       --text: #e3efe8; --muted: #8fa89b; --panel: #1b2a24;
-      --veil: rgba(16, 26, 23, .88);
+      --veil: rgba(16, 26, 23, .9);
       color-scheme: dark;
     }
   }
@@ -33,7 +27,7 @@
     --page: #101a17; --board-a: #17261f; --board-b: #1a2b24;
     --snake: #6fcf97; --head: #b6f2cf; --food: #ff7a59;
     --text: #e3efe8; --muted: #8fa89b; --panel: #1b2a24;
-    --veil: rgba(16, 26, 23, .88);
+    --veil: rgba(16, 26, 23, .9);
     color-scheme: dark;
   }
 
@@ -49,68 +43,82 @@
     height: 100%; margin: 0;
     background: var(--page); color: var(--text);
     font-family: "Rubik", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-    overflow: hidden;
-    overscroll-behavior: none;
-    touch-action: none;
+    overflow: hidden; overscroll-behavior: none; touch-action: none;
     -webkit-user-select: none; user-select: none;
-    -webkit-touch-callout: none;
-    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
   }
 
   /* ===== Каркас страницы ===== */
-  .app {
-    height: 100%; display: flex; flex-direction: column;
-    align-items: center; padding: 12px 16px; gap: 12px;
+  .app { height: 100%; display: flex; flex-direction: column; align-items: center; padding: 10px 16px; gap: 10px; }
+  .hud { width: 100%; max-width: 400px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .hud-left { display: flex; align-items: center; gap: 10px; }
+  .hud h1 { margin: 0; font-size: 1.45rem; font-weight: 800; letter-spacing: -.02em; }
+  .stats { display: flex; gap: 14px; font-size: .9rem; color: var(--muted); }
+  .stats b { color: var(--text); font-weight: 600; font-size: 1.2rem; margin-left: 4px; font-variant-numeric: tabular-nums; display: inline-block; }
+  .stats b.bump { animation: bump .3s ease-out; }
+  @keyframes bump { 40% { transform: scale(1.45); color: var(--food); } }
+
+  /* Кнопка звука: 44×44 px — удобно для пальца */
+  .icon-btn {
+    width: 44px; height: 44px; border: 0; border-radius: 12px; padding: 0; cursor: pointer;
+    background: var(--panel); color: var(--snake); display: grid; place-items: center;
   }
-  .hud {
-    width: 100%; max-width: 400px;
-    display: flex; align-items: baseline; justify-content: space-between;
-  }
-  .hud h1 { margin: 0; font-size: 1.5rem; font-weight: 800; letter-spacing: -.02em; }
-  .stats { display: flex; gap: 18px; font-size: .95rem; color: var(--muted); }
-  .stats b { color: var(--text); font-weight: 600; font-size: 1.25rem; margin-left: 4px; font-variant-numeric: tabular-nums; }
+  .icon-btn:focus-visible, .seg button:focus-visible, #ov-btn:focus-visible { outline: 3px solid var(--food); outline-offset: 2px; }
+  .icon-btn svg { width: 24px; height: 24px; fill: currentColor; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+  .icon-btn .waves, .icon-btn .cross { fill: none; }
+  .icon-btn[data-muted="true"] .waves, .icon-btn[data-muted="false"] .cross { display: none; }
 
   /* Область, в которую вписывается поле */
   .stage { flex: 1; min-height: 0; width: 100%; display: flex; align-items: center; justify-content: center; }
   .board { position: relative; border-radius: 10px; overflow: hidden; box-shadow: 0 0 0 2px var(--snake); }
+  .board.shake { animation: shake .4s; }
+  @keyframes shake { 20% { transform: translate(-6px, 2px); } 40% { transform: translate(5px, -3px); } 60% { transform: translate(-3px, 2px); } 80% { transform: translate(2px, -1px); } }
+  @media (prefers-reduced-motion: reduce) { .board.shake, .stats b.bump { animation: none; } }
   canvas { display: block; width: 100%; height: 100%; }
 
   /* ===== Оверлей (старт и Game Over) ===== */
   .overlay {
     position: absolute; inset: 0; display: flex; flex-direction: column;
-    align-items: center; justify-content: center; gap: 10px; text-align: center;
-    background: var(--veil); padding: 20px;
+    align-items: center; justify-content: center; gap: 8px; text-align: center;
+    background: var(--veil); padding: 14px;
   }
   .overlay[hidden] { display: none; }
-  .overlay h2 { margin: 0; font-size: 1.9rem; font-weight: 800; letter-spacing: -.02em; }
-  .overlay p { margin: 0; color: var(--muted); font-size: 1rem; line-height: 1.4; }
-  .overlay button {
-    margin-top: 6px; min-height: 48px; padding: 0 28px; border: 0; border-radius: 12px;
+  .overlay h2 { margin: 0; font-size: 1.7rem; font-weight: 800; letter-spacing: -.02em; }
+  .overlay p { margin: 0; color: var(--muted); font-size: .95rem; line-height: 1.35; }
+
+  /* Выбор сложности */
+  .seg { display: flex; gap: 6px; margin-top: 4px; }
+  .seg button {
+    min-height: 44px; padding: 0 9px; border-radius: 10px; border: 2px solid transparent;
+    background: var(--panel); color: var(--text); font: inherit; font-size: .85rem; cursor: pointer;
+  }
+  .seg button[aria-checked="true"] { border-color: var(--snake); background: var(--board-b); font-weight: 600; }
+  #ov-btn {
+    min-height: 48px; padding: 0 28px; border: 0; border-radius: 12px; margin-top: 4px;
     background: var(--snake); color: var(--page); font: inherit; font-weight: 600; font-size: 1.05rem; cursor: pointer;
   }
-  .overlay button:focus-visible { outline: 3px solid var(--food); outline-offset: 3px; }
   .hint-touch { display: none; }
   @media (pointer: coarse) { .hint-touch { display: inline; } .hint-keys { display: none; } }
 
-  /* ===== Экранные стрелки (только на сенсорных экранах) ===== */
-  .pad {
-    display: none; grid-template-columns: repeat(3, 64px); grid-template-rows: repeat(2, 64px);
-    gap: 8px; padding-bottom: 6px;
-  }
+  /* ===== Экранные стрелки (только на сенсорных/узких экранах) ===== */
+  .pad { display: none; grid-template-columns: repeat(3, 64px); grid-template-rows: repeat(2, 64px); gap: 8px; padding-bottom: 6px; }
   @media (pointer: coarse), (max-width: 700px) { .pad { display: grid; } }
   .pad button {
-    width: 64px; height: 64px; border: 0; border-radius: 16px; padding: 0;
-    background: var(--panel); color: var(--snake); display: grid; place-items: center; cursor: pointer;
-    touch-action: none;
+    width: 64px; height: 64px; border: 0; border-radius: 16px; padding: 0; cursor: pointer;
+    background: var(--panel); color: var(--snake); display: grid; place-items: center; touch-action: none;
   }
   .pad button:active { background: var(--snake); color: var(--page); }
   .pad svg { width: 28px; height: 28px; fill: none; stroke: currentColor; stroke-width: 3.5; stroke-linecap: round; stroke-linejoin: round; }
-  .b-up { grid-column: 2; grid-row: 1; }
-  .b-left { grid-column: 1; grid-row: 2; }
-  .b-down { grid-column: 2; grid-row: 2; }
-  .b-right { grid-column: 3; grid-row: 2; }
-  .b-up svg { transform: rotate(0deg); } .b-right svg { transform: rotate(90deg); }
-  .b-down svg { transform: rotate(180deg); } .b-left svg { transform: rotate(270deg); }
+  .b-up { grid-column: 2; grid-row: 1; } .b-left { grid-column: 1; grid-row: 2; }
+  .b-down { grid-column: 2; grid-row: 2; } .b-right { grid-column: 3; grid-row: 2; }
+  .b-right svg { transform: rotate(90deg); } .b-down svg { transform: rotate(180deg); } .b-left svg { transform: rotate(270deg); }
+
+  /* Низкие экраны: стрелки в один ряд, чтобы поле не сжималось */
+  @media (max-height: 700px) {
+    .pad { grid-template-columns: repeat(4, 64px); grid-template-rows: 64px; }
+    .pad .b-left { grid-column: 1; grid-row: 1; } .pad .b-up { grid-column: 2; grid-row: 1; }
+    .pad .b-down { grid-column: 3; grid-row: 1; } .pad .b-right { grid-column: 4; grid-row: 1; }
+  }
 </style>
 </head>
 <body>
@@ -120,7 +128,12 @@
 
 <div class="app">
   <div class="hud">
-    <h1>Змейка</h1>
+    <div class="hud-left">
+      <h1>Змейка</h1>
+      <button class="icon-btn" id="mute" data-ui data-muted="false" type="button" aria-label="Выключить звук">
+        <svg viewBox="0 0 24 24"><path stroke="none" d="M3 9v6h4l5 4V5L7 9H3z"/><path class="waves" d="M15.5 9a4 4 0 010 6M18 6.5a8 8 0 010 11"/><path class="cross" d="M16 9.5l5 5M21 9.5l-5 5"/></svg>
+      </button>
+    </div>
     <div class="stats" aria-live="polite">
       <span>Счёт<b id="score">0</b></span>
       <span>Рекорд<b id="best">0</b></span>
@@ -132,9 +145,14 @@
       <canvas id="canvas" aria-label="Игровое поле"></canvas>
       <div class="overlay" id="overlay">
         <h2 id="ov-title">Змейка</h2>
-        <p id="ov-text"></p>
-        <button id="ov-btn" type="button">Играть</button>
-        <p><span class="hint-keys">Пробел или Enter</span><span class="hint-touch">Коснитесь экрана</span></p>
+        <p id="ov-text">Не врезайтесь в стены и в себя.</p>
+        <div class="seg" id="seg" role="radiogroup" aria-label="Сложность">
+          <button type="button" role="radio" data-ui data-level="easy">Лёгкий</button>
+          <button type="button" role="radio" data-ui data-level="normal">Средний</button>
+          <button type="button" role="radio" data-ui data-level="hard">Сложный</button>
+        </div>
+        <button id="ov-btn" data-ui type="button">Играть</button>
+        <p><span class="hint-keys">Пробел или Enter</span><span class="hint-touch">Или тап по экрану</span></p>
       </div>
     </div>
   </div>
@@ -152,220 +170,306 @@
   'use strict';
 
   /* ===== Константы ===== */
-  const COLS = 20, ROWS = 20;          // размер сетки в клетках
-  const MAX_SIZE = 400, MIN_SIZE = 300; // размер поля в пикселях
-  const START_DELAY = 140, MIN_DELAY = 70; // интервал хода, мс
-  const DIRS = {
-    up: { x: 0, y: -1 }, down: { x: 0, y: 1 },
-    left: { x: -1, y: 0 }, right: { x: 1, y: 0 }
+  const COLS = 20, ROWS = 20;
+  const MAX_SIZE = 400, MIN_SIZE = 300;
+  const DIRS = { up: { x: 0, y: -1 }, down: { x: 0, y: 1 }, left: { x: -1, y: 0 }, right: { x: 1, y: 0 } };
+  // Уровни сложности: стартовый интервал хода, минимальный интервал, ускорение за очко (мс)
+  const LEVELS = {
+    easy:   { start: 150, min: 100, step: 2 },
+    normal: { start: 120, min: 75,  step: 2.5 },
+    hard:   { start: 90,  min: 55,  step: 2 }
+  };
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ===== DOM ===== */
+  const $ = (id) => document.getElementById(id);
+  const stage = $('stage'), board = $('board'), canvas = $('canvas'), ctx = canvas.getContext('2d');
+  const scoreEl = $('score'), bestEl = $('best'), muteBtn = $('mute');
+  const overlay = $('overlay'), ovTitle = $('ov-title'), ovText = $('ov-text'), ovBtn = $('ov-btn'), seg = $('seg');
+
+  /* ===== LocalStorage (с защитой от ошибок доступа) ===== */
+  const store = {
+    get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+    set(k, v) { try { localStorage.setItem(k, String(v)); } catch (e) {} }
   };
 
-  /* ===== Элементы DOM ===== */
-  const $ = (id) => document.getElementById(id);
-  const stage = $('stage'), board = $('board'), canvas = $('canvas');
-  const ctx = canvas.getContext('2d');
-  const scoreEl = $('score'), bestEl = $('best');
-  const overlay = $('overlay'), ovTitle = $('ov-title'), ovText = $('ov-text'), ovBtn = $('ov-btn');
+  /* ===== Звук (Web Audio API, без внешних файлов) ===== */
+  const sfx = (() => {
+    let ac = null, muted = store.get('snake.muted') === '1';
+    // Контекст создаётся и «будится» только по жесту пользователя
+    function unlock() {
+      try {
+        if (!ac) { const C = window.AudioContext || window.webkitAudioContext; if (!C) return; ac = new C(); }
+        if (ac.state === 'suspended') ac.resume();
+      } catch (e) {}
+    }
+    function tone(freq, at, dur, type, vol, slideTo) {
+      const o = ac.createOscillator(), g = ac.createGain(), t0 = ac.currentTime + at;
+      o.type = type;
+      o.frequency.setValueAtTime(freq, t0);
+      if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, t0 + dur);
+      g.gain.setValueAtTime(vol, t0);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      o.connect(g); g.connect(ac.destination);
+      o.start(t0); o.stop(t0 + dur + 0.02);
+    }
+    return {
+      unlock,
+      get muted() { return muted; },
+      toggle() { muted = !muted; store.set('snake.muted', muted ? '1' : '0'); if (!muted) { unlock(); this.eat(); } },
+      eat() { if (muted || !ac) return; tone(620, 0, .09, 'square', .07); tone(930, .07, .12, 'square', .07); },
+      die() { if (muted || !ac) return; tone(300, 0, .55, 'sawtooth', .1, 60); tone(150, .1, .5, 'square', .07, 40); }
+    };
+  })();
+
+  function renderMute() {
+    muteBtn.dataset.muted = sfx.muted;
+    muteBtn.setAttribute('aria-label', sfx.muted ? 'Включить звук' : 'Выключить звук');
+  }
 
   /* ===== Состояние игры ===== */
-  let snake, dir, queue, food, score, best = 0, status = 'ready', timer = null;
+  let snake, prev, dir, queue, food, foodBorn = 0, score = 0;
+  let status = 'ready', lastTick = 0, overAt = 0, flashAt = -1e9, lastFrame = 0;
+  let parts = [];                 // частицы эффекта поедания
   let cell = 20, colors = {};
+  let level = store.get('snake.level');
+  if (!LEVELS[level]) level = 'normal';
 
-  // Рекорд хранится в браузере (если хранилище доступно)
-  try { best = parseInt(localStorage.getItem('snake-best'), 10) || 0; } catch (e) {}
-  bestEl.textContent = best;
+  // Рекорд хранится отдельно для каждого уровня (прежний общий рекорд достаётся среднему)
+  const getBest = () => parseInt(store.get('snake.best.' + level), 10) ||
+    (level === 'normal' ? parseInt(store.get('snake.best'), 10) : 0) || 0;
 
-  /* ===== Инициализация новой партии ===== */
+  function setLevel(l) {
+    level = l;
+    store.set('snake.level', l);
+    seg.querySelectorAll('button').forEach((b) => b.setAttribute('aria-checked', b.dataset.level === l));
+    bestEl.textContent = getBest();
+  }
+
+  const stepDelay = () => { const L = LEVELS[level]; return Math.max(L.min, L.start - score * L.step); };
+
+  /* ===== Новая партия ===== */
   function reset() {
     const cx = Math.floor(COLS / 2), cy = Math.floor(ROWS / 2);
-    // Голова первая; змейка в центре, длина 3, смотрит вправо
-    snake = [{ x: cx, y: cy }, { x: cx - 1, y: cy }, { x: cx - 2, y: cy }];
-    dir = DIRS.right;
-    queue = [];
-    score = 0;
+    snake = [{ x: cx, y: cy }, { x: cx - 1, y: cy }, { x: cx - 2, y: cy }]; // длина 3, голова первая
+    prev = snake; dir = DIRS.right; queue = []; parts = []; score = 0;
     scoreEl.textContent = 0;
     placeFood();
   }
 
-  /* Еда появляется в случайной свободной клетке */
   function placeFood() {
     const taken = new Set(snake.map((s) => s.x + ',' + s.y));
     const free = [];
-    for (let y = 0; y < ROWS; y++)
-      for (let x = 0; x < COLS; x++)
-        if (!taken.has(x + ',' + y)) free.push({ x, y });
+    for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) if (!taken.has(x + ',' + y)) free.push({ x, y });
     food = free.length ? free[Math.floor(Math.random() * free.length)] : null;
-  }
-
-  /* ===== Управление ===== */
-  // Добавляем направление в очередь, запрещая разворот на 180° и повтор
-  function setDir(name) {
-    const d = DIRS[name];
-    const last = queue.length ? queue[queue.length - 1] : dir;
-    if (d.x === -last.x && d.y === -last.y) return; // разворот запрещён
-    if (d.x === last.x && d.y === last.y) return;   // то же направление
-    if (queue.length < 2) queue.push(d);
-  }
-
-  /* Нажатие направления: в режиме ожидания сначала запускает игру */
-  function steer(name) {
-    if (status !== 'running') { startGame(); }
-    setDir(name);
+    foodBorn = performance.now();
   }
 
   function startGame() {
     if (status === 'running') return;
+    // Защита от случайного рестарта сразу после проигрыша
+    if (status === 'over' && performance.now() - overAt < 500) return;
+    sfx.unlock();
     reset();
     status = 'running';
     overlay.hidden = true;
-    draw();
-    schedule();
+    lastTick = performance.now();
   }
 
-  /* ===== Игровой цикл ===== */
-  function schedule() {
-    const delay = Math.max(MIN_DELAY, START_DELAY - score * 3); // с ростом счёта быстрее
-    timer = setTimeout(tick, delay);
+  /* ===== Управление ===== */
+  function setDir(name) {
+    const d = DIRS[name], last = queue.length ? queue[queue.length - 1] : dir;
+    if (d.x === -last.x && d.y === -last.y) return; // разворот на 180° запрещён
+    if (d.x === last.x && d.y === last.y) return;
+    if (queue.length < 2) queue.push(d);
+  }
+  function steer(name) {
+    if (status === 'ready') startGame();      // первое движение запускает игру
+    if (status === 'running') setDir(name);   // после Game Over стрелки не рестартят
   }
 
-  function tick() {
-    if (status !== 'running') return;
+  /* ===== Логика одного хода ===== */
+  function step(now) {
     if (queue.length) dir = queue.shift();
-
     const head = { x: snake[0].x + dir.x, y: snake[0].y + dir.y };
     const eating = food && head.x === food.x && head.y === food.y;
-
-    // Столкновение со стеной
     const hitWall = head.x < 0 || head.y < 0 || head.x >= COLS || head.y >= ROWS;
-    // Столкновение с хвостом (если не едим, кончик хвоста освободится)
     const body = eating ? snake : snake.slice(0, -1);
-    const hitSelf = body.some((s) => s.x === head.x && s.y === head.y);
-    if (hitWall || hitSelf) return gameOver(false);
+    if (hitWall || body.some((s) => s.x === head.x && s.y === head.y)) return gameOver(false, now);
 
-    snake.unshift(head);
+    prev = snake;                                   // старые позиции нужны для плавной анимации
+    snake = [head].concat(eating ? snake : snake.slice(0, -1));
     if (eating) {
-      score += 1;                    // +1 очко и рост за каждую еду
+      score += 1;
       scoreEl.textContent = score;
+      scoreEl.classList.remove('bump'); void scoreEl.offsetWidth; scoreEl.classList.add('bump');
+      burst(food.x, food.y, now);
+      sfx.eat();
       placeFood();
-      if (!food) { draw(); return gameOver(true); } // поле заполнено
-    } else {
-      snake.pop();
+      if (!food) gameOver(true, now);
     }
-    draw();
-    schedule();
   }
 
-  function gameOver(won) {
-    status = 'over';
-    clearTimeout(timer);
-    if (score > best) {
-      best = score; bestEl.textContent = best;
-      try { localStorage.setItem('snake-best', String(best)); } catch (e) {}
-    }
+  function gameOver(won, now) {
+    status = 'over'; overAt = now;
+    const old = getBest(), record = score > old;
+    if (record) { store.set('snake.best.' + level, score); bestEl.textContent = score; }
     ovTitle.textContent = won ? 'Победа!' : 'Игра окончена';
-    ovText.textContent = 'Ваш счёт: ' + score;
+    ovText.textContent = record && score > 0 ? 'Новый рекорд: ' + score : 'Ваш счёт: ' + score;
     ovBtn.textContent = 'Играть снова';
     overlay.hidden = false;
-    draw();
+    if (!won) {
+      flashAt = now; sfx.die();
+      board.classList.remove('shake'); void board.offsetWidth; board.classList.add('shake');
+    }
+  }
+
+  /* ===== Эффект поедания: частицы и кольцо ===== */
+  function burst(gx, gy, now) {
+    if (reduceMotion) return;
+    const x = (gx + .5) * cell, y = (gy + .5) * cell;
+    parts.push({ ring: true, x, y, born: now, life: 420 });
+    for (let i = 0; i < 10; i++) {
+      const a = Math.random() * Math.PI * 2, v = 50 + Math.random() * 90;
+      parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, born: now, life: 450 });
+    }
   }
 
   /* ===== Отрисовка ===== */
   function readColors() {
     const s = getComputedStyle(document.documentElement);
-    ['board-a', 'board-b', 'snake', 'head', 'food', 'page'].forEach((k) => {
-      colors[k] = s.getPropertyValue('--' + k).trim();
-    });
+    ['board-a', 'board-b', 'snake', 'head', 'food', 'page'].forEach((k) => { colors[k] = s.getPropertyValue('--' + k).trim(); });
   }
 
-  function roundRect(x, y, w, h, r) {
-    ctx.beginPath();
-    ctx.moveTo(x + r, y);
-    ctx.arcTo(x + w, y, x + w, y + h, r);
-    ctx.arcTo(x + w, y + h, x, y + h, r);
-    ctx.arcTo(x, y + h, x, y, r);
-    ctx.arcTo(x, y, x + w, y, r);
-    ctx.closePath();
+  // Позиция i-го сегмента между прошлым и текущим ходом (t от 0 до 1)
+  function segPos(i, t) {
+    const c = snake[i], p = prev[i] || prev[prev.length - 1] || c;
+    return { x: (p.x + (c.x - p.x) * t + .5) * cell, y: (p.y + (c.y - p.y) * t + .5) * cell };
   }
 
-  function draw() {
-    if (!snake) return;
+  function draw(now, t) {
+    const size = cell * COLS, dt = Math.min(.05, (now - lastFrame) / 1000 || 0);
+    lastFrame = now;
+
     // Шахматный фон
-    for (let y = 0; y < ROWS; y++)
-      for (let x = 0; x < COLS; x++) {
-        ctx.fillStyle = (x + y) % 2 ? colors['board-a'] : colors['board-b'];
-        ctx.fillRect(x * cell, y * cell, cell, cell);
-      }
-    // Еда
-    if (food) {
-      ctx.fillStyle = colors.food;
-      ctx.beginPath();
-      ctx.arc((food.x + .5) * cell, (food.y + .5) * cell, cell * .36, 0, Math.PI * 2);
-      ctx.fill();
+    for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) {
+      ctx.fillStyle = (x + y) % 2 ? colors['board-a'] : colors['board-b'];
+      ctx.fillRect(x * cell, y * cell, cell, cell);
     }
-    // Змейка
-    const pad = cell * .08;
-    snake.forEach((s, i) => {
-      ctx.fillStyle = i === 0 ? colors.head : colors.snake;
-      roundRect(s.x * cell + pad, s.y * cell + pad, cell - pad * 2, cell - pad * 2, cell * .28);
-      ctx.fill();
-    });
-    // Глаза на голове (смещены по направлению движения)
-    const h = snake[0], cx = (h.x + .5) * cell, cy = (h.y + .5) * cell;
-    const px = -dir.y, py = dir.x; // перпендикуляр к направлению
+
+    // Еда: появляется с «выпрыгиванием» и слегка пульсирует
+    if (food) {
+      const k = Math.max(0, Math.min(1, (now - foodBorn) / 220)), pop = 1 - Math.pow(1 - k, 3);
+      const pulse = reduceMotion ? 1 : 1 + .07 * Math.sin(now / 170);
+      const r = cell * .34 * pop * pulse, fx = (food.x + .5) * cell, fy = (food.y + .5) * cell;
+      ctx.fillStyle = colors.food;
+      ctx.beginPath(); ctx.arc(fx, fy, r, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,.35)';
+      ctx.beginPath(); ctx.arc(fx - r * .3, fy - r * .3, r * .22, 0, Math.PI * 2); ctx.fill();
+    }
+
+    // Тело: плавная ломаная через интерполированные центры сегментов
+    ctx.strokeStyle = colors.snake; ctx.lineWidth = cell * .74;
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.beginPath();
+    for (let i = snake.length - 1; i >= 0; i--) {
+      const p = segPos(i, t);
+      i === snake.length - 1 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y);
+    }
+    ctx.stroke();
+
+    // Голова и глаза
+    const h = segPos(0, t), px = -dir.y, py = dir.x;
+    ctx.fillStyle = colors.head;
+    ctx.beginPath(); ctx.arc(h.x, h.y, cell * .42, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = colors.page;
     [-1, 1].forEach((k) => {
       ctx.beginPath();
-      ctx.arc(cx + dir.x * cell * .15 + px * k * cell * .2, cy + dir.y * cell * .15 + py * k * cell * .2, cell * .09, 0, Math.PI * 2);
+      ctx.arc(h.x + dir.x * cell * .14 + px * k * cell * .17, h.y + dir.y * cell * .14 + py * k * cell * .17, cell * .08, 0, Math.PI * 2);
       ctx.fill();
     });
+
+    // Частицы и кольцо
+    parts = parts.filter((p) => now - p.born < p.life);
+    parts.forEach((p) => {
+      const a = 1 - (now - p.born) / p.life;
+      ctx.globalAlpha = a;
+      if (p.ring) {
+        ctx.strokeStyle = colors.food; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(p.x, p.y, cell * (.3 + (1 - a) * 1.1), 0, Math.PI * 2); ctx.stroke();
+      } else {
+        p.x += p.vx * dt; p.y += p.vy * dt;
+        ctx.fillStyle = colors.food;
+        ctx.beginPath(); ctx.arc(p.x, p.y, cell * .09 * (.4 + a), 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    });
+
+    // Красная вспышка при проигрыше
+    const fa = 1 - (now - flashAt) / 350;
+    if (fa > 0) { ctx.globalAlpha = fa * .45; ctx.fillStyle = colors.food; ctx.fillRect(0, 0, size, size); ctx.globalAlpha = 1; }
   }
 
-  /* ===== Адаптивный размер поля ===== */
+  /* ===== Главный цикл (requestAnimationFrame) ===== */
+  function frame() {
+    requestAnimationFrame(frame);   // следующий кадр планируем сразу: сбой в одном кадре не остановит игру
+    const now = performance.now();  // единая шкала времени для всей игры
+    const d = stepDelay();
+    if (status === 'running' && now - lastTick >= d) {
+      lastTick = now - lastTick > d * 2 ? now : lastTick + d; // без «догонялок» после лагов
+      step(now);
+    }
+    const t = status === 'running' ? Math.max(0, Math.min(1, (now - lastTick) / d)) : 1;
+    draw(now, t);
+  }
+
+  /* ===== Адаптивный размер ===== */
   function resize() {
     const avail = Math.min(MAX_SIZE, stage.clientWidth, stage.clientHeight);
     cell = Math.floor(Math.max(MIN_SIZE, avail) / COLS);
-    const size = cell * COLS;
-    const dpr = window.devicePixelRatio || 1;
+    const size = cell * COLS, dpr = window.devicePixelRatio || 1;
     board.style.width = board.style.height = size + 'px';
     canvas.width = canvas.height = Math.round(size * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     readColors();
-    if (!snake) reset();
-    draw();
   }
 
   /* ===== Клавиатура ===== */
-  const KEYS = {
-    ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right',
-    w: 'up', s: 'down', a: 'left', d: 'right'
-  };
+  const KEYS = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', w: 'up', s: 'down', a: 'left', d: 'right' };
+  const LEVEL_KEYS = { 1: 'easy', 2: 'normal', 3: 'hard' };
   window.addEventListener('keydown', (e) => {
     if (KEYS[e.key]) { e.preventDefault(); steer(KEYS[e.key]); return; }
-    if (e.key === ' ' || e.key === 'Enter') {
-      e.preventDefault();
-      if (status !== 'running') startGame(); // рестарт по Space/Enter
-    }
+    if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); startGame(); return; }
+    if (e.key.toLowerCase() === 'm') { sfx.toggle(); renderMute(); return; }
+    if (LEVEL_KEYS[e.key] && status !== 'running') setLevel(LEVEL_KEYS[e.key]);
   });
 
-  /* ===== Экранные кнопки ===== */
+  /* ===== Кнопки интерфейса ===== */
   document.querySelectorAll('.pad button').forEach((b) => {
-    b.addEventListener('pointerdown', (e) => { e.preventDefault(); steer(b.dataset.dir); });
+    b.addEventListener('pointerdown', (e) => { e.preventDefault(); sfx.unlock(); steer(b.dataset.dir); });
   });
+  muteBtn.addEventListener('click', () => { sfx.toggle(); renderMute(); muteBtn.blur(); });
+  seg.addEventListener('click', (e) => {
+    const b = e.target.closest('button');
+    if (b && status !== 'running') { setLevel(b.dataset.level); b.blur(); }
+  });
+  ovBtn.addEventListener('click', startGame);
 
   /* ===== Свайпы и тап ===== */
-  const SWIPE_MIN = 24; // минимальная длина свайпа, px
+  const SWIPE_MIN = 24;
   let t0 = null, swiped = false;
+  const isUI = (el) => !!el.closest('[data-ui]'); // элементы интерфейса сохраняют обычные клики
 
   document.addEventListener('touchstart', (e) => {
-    e.preventDefault(); // блокируем скролл и зум страницы
+    if (!isUI(e.target)) e.preventDefault(); // блокируем скролл и зум
     const t = e.touches[0];
-    t0 = { x: t.clientX, y: t.clientY, onPad: !!e.target.closest('.pad') };
+    t0 = { x: t.clientX, y: t.clientY, skip: !!e.target.closest('.pad') || isUI(e.target) };
     swiped = false;
   }, { passive: false });
 
   document.addEventListener('touchmove', (e) => {
     e.preventDefault();
-    if (!t0 || t0.onPad || swiped) return;
+    if (!t0 || t0.skip || swiped) return;
     const t = e.touches[0], dx = t.clientX - t0.x, dy = t.clientY - t0.y;
     if (Math.max(Math.abs(dx), Math.abs(dy)) < SWIPE_MIN) return;
     swiped = true;
@@ -373,25 +477,28 @@
   }, { passive: false });
 
   document.addEventListener('touchend', (e) => {
-    e.preventDefault();
-    // Тап по оверлею запускает игру или рестарт
-    if (t0 && !t0.onPad && !swiped && status !== 'running' && e.target.closest('.overlay')) startGame();
+    sfx.unlock(); // iOS разрешает звук только после касания
+    if (!isUI(e.target)) e.preventDefault();
+    // Тап по свободному месту оверлея — старт или рестарт
+    if (t0 && !t0.skip && !swiped && status !== 'running' && e.target.closest('.overlay')) startGame();
     t0 = null;
   }, { passive: false });
 
-  // Запрет жестов масштабирования в iOS Safari
-  ['gesturestart', 'gesturechange', 'gestureend'].forEach((n) =>
-    document.addEventListener(n, (e) => e.preventDefault()));
-
-  // Клик мышью по кнопке на оверлее
-  ovBtn.addEventListener('click', startGame);
+  ['gesturestart', 'gesturechange', 'gestureend'].forEach((n) => document.addEventListener(n, (e) => e.preventDefault()));
 
   /* ===== Запуск ===== */
-  ovText.textContent = 'Съешьте как можно больше, не врезаясь в стены и в себя.';
   window.addEventListener('resize', resize);
   window.addEventListener('orientationchange', resize);
-  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', resize);
+  const mq = window.matchMedia('(prefers-color-scheme: dark)');
+  if (mq.addEventListener) mq.addEventListener('change', resize); else if (mq.addListener) mq.addListener(resize);
+  if (window.ResizeObserver) new ResizeObserver(resize).observe(stage); // пересчёт поля при любом изменении раскладки
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) lastTick = performance.now(); });
+
+  setLevel(level);
+  renderMute();
   resize();
+  reset();
+  requestAnimationFrame(frame);
 })();
 </script>
 </body>
